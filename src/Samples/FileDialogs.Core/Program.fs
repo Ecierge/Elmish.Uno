@@ -1,12 +1,11 @@
-module Elmish.WPF.Samples.FileDialogs.Program
+module Elmish.Uno.Samples.FileDialogs.Program
 
 open System
 open System.IO
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
-open Elmish.WPF
-
+open Elmish.Uno
 
 type Model =
   { CurrentTime: DateTimeOffset
@@ -99,9 +98,9 @@ let main window =
 
   let logger =
     LoggerConfiguration()
-      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Update", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
 

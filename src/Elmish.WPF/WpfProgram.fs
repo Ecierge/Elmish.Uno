@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+﻿namespace Elmish.Uno
 
 open System.Windows
 open Microsoft.Extensions.Logging
@@ -95,7 +95,7 @@ module WpfProgram =
   /// you control app/window instantiation, runWindowWithConfig might be a better option.
   ///
   /// If you execute this from a thread other than the thread owning element.Dispatcher (UI Thread),
-  /// Elmish.WPF will use that background thread to run updates rather than the main UI thread.</summary>
+  /// Elmish.Uno will use that background thread to run updates rather than the main UI thread.</summary>
   /// <remarks>Example multithreaded use:
   /// <code><![CDATA[
   /// let elmishThread =
@@ -120,9 +120,9 @@ module WpfProgram =
       (program: WpfProgram<'model, 'msg, 'viewModel>) =
     let mutable viewModel = None
 
-    let updateLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Update")
-    let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Bindings")
-    let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.WPF.Performance")
+    let updateLogger = program.LoggerFactory.CreateLogger("Elmish.Uno.Update")
+    let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.Uno.Bindings")
+    let performanceLogger = program.LoggerFactory.CreateLogger("Elmish.Uno.Performance")
 
     let measure callName f = BindingVmHelpers.Helpers2.measure performanceLogger LogLevel.Debug program.PerformanceLogThreshold "" "main" callName f
 
@@ -170,7 +170,7 @@ module WpfProgram =
           continuationOnUIThread()
         | Threaded_PendingUIDispatch uiWaiter
         | Threaded_UIDispatch uiWaiter ->
-          uiWaiter.SetException(exn("Error in core Elmish.WPF threading code. Invalid state reached!"))
+          uiWaiter.SetException(exn("Error in core Elmish.Uno threading code. Invalid state reached!"))
       else // message is not from the UI thread
         elmishDispatcher.InvokeAsync(fun () -> dispatch msg) |> ignore // handle as a command message
 

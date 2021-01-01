@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
-using Elmish.WPF.Samples.Threading;
+using Elmish.Uno.Samples.Threading;
 
 #nullable enable
 namespace Threading {

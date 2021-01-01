@@ -1,6 +1,6 @@
-﻿module Elmish.WPF.Samples.NewWindow.Window1Module
+﻿module Elmish.Uno.Samples.NewWindow.Window1Module
 
-open Elmish.WPF
+open Elmish.Uno
 
 
 module Window1 =

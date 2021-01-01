@@ -1,4 +1,4 @@
-﻿namespace Elmish.WPF
+﻿namespace Elmish.Uno
 
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Abstractions

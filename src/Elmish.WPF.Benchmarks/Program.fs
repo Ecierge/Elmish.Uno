@@ -1,4 +1,4 @@
-﻿open Elmish.WPF
+﻿open Elmish.Uno
 
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Running

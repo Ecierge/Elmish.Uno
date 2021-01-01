@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Navigation;
 
-namespace Elmish.WPF.Samples.Capabilities {
+namespace Elmish.Uno.Samples.Capabilities {
   public partial class SelectionScreen : UserControl {
     public SelectionScreen() {
       InitializeComponent();

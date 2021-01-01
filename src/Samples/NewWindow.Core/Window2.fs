@@ -1,6 +1,6 @@
-﻿module Elmish.WPF.Samples.NewWindow.Window2Module
+﻿module Elmish.Uno.Samples.NewWindow.Window2Module
 
-open Elmish.WPF
+open Elmish.Uno
 
 
 [<RequireQualifiedAccess>]

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace Elmish.WPF.Samples.SubModelStatic
+namespace Elmish.Uno.Samples.SubModelStatic
 {
     public partial class MainWindow : Window
     {

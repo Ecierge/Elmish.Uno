@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace Elmish.WPF.Samples.Threading
+namespace Elmish.Uno.Samples.Threading
 {
   public partial class MainWindow : Window
   {

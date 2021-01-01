@@ -1,5 +1,5 @@
 [<AutoOpen>]
-module internal Elmish.WPF.BindingData
+module internal Elmish.Uno.BindingData
 
 open System.Collections.ObjectModel
 open System.Windows

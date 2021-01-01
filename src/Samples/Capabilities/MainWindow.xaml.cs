@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace Elmish.WPF.Samples.Capabilities {
+namespace Elmish.Uno.Samples.Capabilities {
   public partial class MainWindow : Window {
     public MainWindow() {
       InitializeComponent();

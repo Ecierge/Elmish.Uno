@@ -1,6 +1,6 @@
-﻿module Elmish.WPF.Samples.Capabilities.Selection
+﻿module Elmish.Uno.Samples.Capabilities.Selection
 
-open Elmish.WPF
+open Elmish.Uno
 
 
 type Tree<'a> =

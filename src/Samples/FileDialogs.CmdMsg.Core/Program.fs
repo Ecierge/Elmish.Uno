@@ -1,10 +1,10 @@
-module Elmish.WPF.Samples.FileDialogsCmdMsg.Program
+module Elmish.Uno.Samples.FileDialogs.CmdMsg.Program
 
 open System
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
-open Elmish.WPF
+open Elmish.Uno
 
 
 module Core =
@@ -121,9 +121,9 @@ let subscriptions (_model: Model) : Sub<Msg> =
 let main window =
   let logger =
     LoggerConfiguration()
-      .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Update", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Bindings", Events.LogEventLevel.Verbose)
+      .MinimumLevel.Override("Elmish.Uno.Performance", Events.LogEventLevel.Verbose)
       .WriteTo.Console()
       .CreateLogger()
 

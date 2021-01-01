@@ -1,11 +1,11 @@
-namespace Elmish.WPF.Samples.SubModelStatic
+namespace Elmish.Uno.Samples.SubModelStatic
 #nowarn "44"
 
 open System
 open Serilog
 open Serilog.Extensions.Logging
 open Elmish
-open Elmish.WPF
+open Elmish.Uno
 
 module Counter =
 
@@ -183,9 +183,9 @@ module Program =
 
     let logger =
       LoggerConfiguration()
-        .MinimumLevel.Override("Elmish.WPF.Update", Events.LogEventLevel.Verbose)
-        .MinimumLevel.Override("Elmish.WPF.Bindings", Events.LogEventLevel.Verbose)
-        .MinimumLevel.Override("Elmish.WPF.Performance", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.Uno.Update", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.Uno.Bindings", Events.LogEventLevel.Verbose)
+        .MinimumLevel.Override("Elmish.Uno.Performance", Events.LogEventLevel.Verbose)
         .WriteTo.Console()
         .CreateLogger()
 

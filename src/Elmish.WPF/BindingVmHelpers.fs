@@ -1,4 +1,4 @@
-module internal Elmish.WPF.BindingVmHelpers
+module internal Elmish.Uno.BindingVmHelpers
 
 open System
 open System.Windows

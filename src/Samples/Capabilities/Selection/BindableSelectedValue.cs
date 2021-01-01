@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using Microsoft.Xaml.Behaviors;
 
-namespace Elmish.WPF.Samples.Capabilities {
+namespace Elmish.Uno.Samples.Capabilities {
   class BindableSelectedValue : Behavior<TreeView> {
 
     public object SelectedValue {

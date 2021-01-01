@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace Elmish.WPF.Samples.Multiselect {
+namespace Elmish.Uno.Samples.Multiselect {
   public partial class App : Application {
     public App() {
       this.Activated += StartElmish;

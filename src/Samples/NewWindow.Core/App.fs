@@ -1,8 +1,8 @@
-﻿module Elmish.WPF.Samples.NewWindow.AppModule
+﻿module Elmish.Uno.Samples.NewWindow.AppModule
 
 open System.Windows
 
-open Elmish.WPF
+open Elmish.Uno
 
 open Window1Module
 open Window2Module

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows;
-using Elmish.WPF.Samples.Capabilities;
+using Elmish.Uno.Samples.Capabilities;
 
 namespace Capabilities {
   public partial class App : Application {
