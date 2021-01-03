@@ -85,7 +85,7 @@ module Set =
       let dispatch msg = model.Value <- msg
       let binding =
         BindingData.TwoWay.id
-      
+
       let vmBinding =
         Initialize(LoggingViewModelArgs.none, name, noGetSelectedItemCall)
           .Recursive(initialModel, dispatch, (fun () -> model.Value), binding)

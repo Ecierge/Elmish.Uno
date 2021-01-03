@@ -167,7 +167,7 @@ module Binding =
       x
       |> id
       |> mapMsg Option.ofNullable
-      
+
     /// Creates a one-way-to-source binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
@@ -219,7 +219,7 @@ module Binding =
       id<'a>
       >> mapMsg ValueOption.ofObj
       >> mapModel ValueOption.toObj
-      
+
   /// <summary>
   ///   The strongly-typed counterpart of <c>Binding.oneWaySeq</c> with parameter <c>getId</c>.
   ///   Exposes an <c>ObservableCollection</c> of child items for binding.
