@@ -1,8 +1,13 @@
 ﻿module Elmish.Uno.Samples.NewWindow.AppModule
 
 open System.Windows
-
+open Elmish
 open Elmish.Uno
+open Windows.ApplicationModel.Core
+open Windows.UI.Core
+open Windows.UI.ViewManagement
+open Windows.UI.Xaml
+open Windows.UI.Xaml.Controls
 
 open Window1Module
 open Window2Module

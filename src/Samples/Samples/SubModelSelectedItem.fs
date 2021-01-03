@@ -25,7 +25,7 @@ let update msg m =
   match msg with
   | Select entityId -> { m with Selected = entityId }
 
-let bindings () : Binding<Model, Msg> list = [
+let bindings : Binding<Model, Msg> list = [
   "SelectRandom" |> Binding.cmd
     (fun m -> m.Entities.Item(Random().Next(m.Entities.Length)).Id |> Some |> Select)
 
@@ -42,17 +42,10 @@ let bindings () : Binding<Model, Msg> list = [
   "SelectedEntity" |> Binding.subModelSelectedItem("Entities", (fun m -> m.Selected), Select)
 ]
 
-let designVm = ViewModel.designInstance (init ()) (bindings ())
+[<CompiledName("Program")>]
+let program =
+  Program.mkSimpleUno init update bindings
+  |> Program.withLogger (new SerilogLoggerFactory(logger))
 
-let main window =
-  let logger =
-    LoggerConfiguration()
-      .MinimumLevel.Override("Elmish.Uno.Update", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.Uno.Bindings", Events.LogEventLevel.Verbose)
-      .MinimumLevel.Override("Elmish.Uno.Performance", Events.LogEventLevel.Verbose)
-      .WriteTo.Console()
-      .CreateLogger()
-
-  WpfProgram.mkSimple init update bindings
-  |> WpfProgram.withLogger (new SerilogLoggerFactory(logger))
-  |> WpfProgram.startElmishLoop window
+[<CompiledName("Config")>]
+let config = { ElmConfig.Default with LogConsole = true; Measure = true }
