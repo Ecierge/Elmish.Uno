@@ -58,13 +58,13 @@ module Window2 =
     then InOut.Out Window2OutMsg.Close
     else InOut.In msg
 
-  let bindings () =
+  let bindings =
     let inBindings =
       [ "Input" |> Binding.twoWay (Input.get, SetInput)
         "IsChecked" |> Binding.twoWay (IsChecked.get, SetChecked)
-        "SubmitMsgVisibility" |> confirmStateVisibilityBinding ConfirmState.Submit
-        "CancelMsgVisibility" |> confirmStateVisibilityBinding ConfirmState.Cancel
-        "CloseMsgVisibility"  |> confirmStateVisibilityBinding ConfirmState.Close ]
+        "SubmitMsgVisible" |> confirmStateVisibilityBinding ConfirmState.Submit
+        "CancelMsgVisible" |> confirmStateVisibilityBinding ConfirmState.Cancel
+        "CloseMsgVisible"  |> confirmStateVisibilityBinding ConfirmState.Close ]
       |> Bindings.mapMsg InOut.In
     let inOutBindings =
       [ "Submit" |> Binding.cmd (confirmStateToMsg ConfirmState.Submit Submit)
@@ -72,4 +72,5 @@ module Window2 =
         "Close"  |> Binding.cmd (confirmStateToMsg ConfirmState.Close  Close) ]
     inBindings @ inOutBindings
 
-let designVm = ViewModel.designInstance Window2.init (Window2.bindings ())
+[<CompiledName("DesignInstance")>]
+let designInstance = ViewModel.designInstance Window2.init (Window2.bindings)

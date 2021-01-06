@@ -1,6 +1,7 @@
 ﻿[<AutoOpen>]
 module AutoOpen
 
+open Microsoft.UI.Xaml
 
 let flip f b a = f a b
 

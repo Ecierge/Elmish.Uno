@@ -6,8 +6,9 @@ open Elmish.Uno
 module Window1 =
   let init = ""
 
-  let bindings () = [
+  let bindings = [
     "Input" |> Binding.twoWay (id, id)
   ]
 
-let designVm = ViewModel.designInstance Window1.init (Window1.bindings ())
+[<CompiledName("DesignInstance")>]
+let designInstance = ViewModel.designInstance Window1.init Window1.bindings

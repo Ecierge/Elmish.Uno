@@ -16,6 +16,9 @@
     <Compile Include="FileDialogs.fs" />
     <Compile Include="FileDialogs.CmdMsg.fs" />
     <Compile Include="EventBindingsAndBehaviors.fs" />
+    <Compile Include="NewWindow.AutoOpen.fs" DependentUpon="NewWindow.fs" />
+    <Compile Include="NewWindow.Window1.fs" DependentUpon="NewWindow.fs" />
+    <Compile Include="NewWindow.Window2.fs" DependentUpon="NewWindow.fs" />
     <Compile Include="NewWindow.fs" />
   </ItemGroup>
 
@@ -26,8 +29,8 @@
   <ItemGroup>
     <PackageReference Include="Elmish" Version="[3.0.3, 4)" />
     <PackageReference Include="FSharp.Control.FusionTasks" Version="2.0.2" />
-    <PackageReference Include="Uno.Core" Version="2.1.0" />
-    <PackageReference Include="Uno.UI" Version="3.4.0" />
+    <PackageReference Include="Uno.Core" Version="2.3.0" />
+    <PackageReference Include="Uno.UI" Version="3.5.1" />
   </ItemGroup>
 
   <ItemGroup>
