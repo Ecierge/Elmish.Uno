@@ -13,7 +13,17 @@
     <tconv:BoolToVisibilityConverter x:Key="VisibilityConverter" />
   </Page.Resources>
 
-  <StackPanel d:DataContext="{Binding NewWindow}" VerticalAlignment="Center">
+  <Grid d:DataContext="{Binding NewWindow}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
     <TextBlock HorizontalAlignment="Center" FontWeight="Bold">Page 1</TextBlock>
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
@@ -21,12 +31,13 @@
       <Button Command="{Binding Window1Close}" Content="Close" Width="70" Margin="5" />
     </StackPanel>
     <TextBlock
+      Grid.Row="2"
       Margin="0,10,0,0"
       HorizontalAlignment="Center"
-      FontWeight="Bold">
-      Page 2
-    </TextBlock>
+      FontWeight="Bold"
+      Text="Page 2" />
     <Button
+      Grid.Row="3"
       Width="70"
       Margin="0,5,0,5"
       HorizontalAlignment="Center"
@@ -44,5 +55,5 @@
       <Run Text="Window 2 checkbox:" />
       <Run Text="{Binding Window2.IsChecked}" />
     </TextBlock>
-  </StackPanel>
+  </Grid>
 </Page>
