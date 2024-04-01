@@ -1,4 +1,4 @@
-﻿module BindingVmHelpersTests.M
+﻿module Elmish.Uno.Tests.BindingVmHelpersTests
 
 open System
 
