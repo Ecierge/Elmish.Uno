@@ -1,6 +1,7 @@
 ﻿module Elmish.Uno.Samples.NewWindow.AppModule
 
 open System
+open Elmish
 open Elmish.Uno
 open Microsoft.UI.Xaml
 
