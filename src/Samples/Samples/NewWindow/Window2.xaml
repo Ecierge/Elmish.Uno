@@ -10,61 +10,60 @@
   <Page d:DataContext="{d:DesignInstance Type=samples:DesignData, IsDesignTimeCreatable=True}">
     <StackPanel d:DataContext="{Binding NewWindow2}" VerticalAlignment="Center">
       <TextBlock TextWrapping="Wrap">
-      This window is shown modally and blocks the main window until it's closed.
+        This window is shown modally and blocks the main window until it's closed.
       </TextBlock>
       <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
-      Furthermore, it shows how submit/cancel/close just uses normal messages
-      and how user code can fully control the closing behaviour, for example to
-      show a message to the user (you could, for example, display form
-      validation errors when submit is clicked.)
+        Furthermore, it shows how submit/cancel/close just uses normal messages
+        and how user code can fully control the closing behaviour, for example to
+        show a message to the user (you could, for example, display form
+        validation errors when submit is clicked.)
       </TextBlock>
       <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
-      The window can be closed in three ways:
+        The window can be closed in three ways:
       </TextBlock>
       <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
-      – Clicking Submit (or Enter, since the button has IsDefault=true)
+        – Clicking Submit (or Enter, since the button has IsDefault=true)
       </TextBlock>
       <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
-      – Clicking Cancel (or Esc, since the button has IsCancel=true)
+        – Clicking Cancel (or Esc, since the button has IsCancel=true)
       </TextBlock>
       <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
-      – Externally: Close (X) button, Alt+F4, or System Menu -&gt; Close
+        – Externally: Close (X) button, Alt+F4, or System Menu -&gt; Close
       </TextBlock>
       <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
-      Note the interplay between the visible/closed state of this window and the
-      main window's binding to the state controlled by the inputs below. The
-      input state in the model is None when the window is closed, so it's reset
-      each time the window is shown.
+        Note the interplay between the visible/closed state of this window and the
+        main window's binding to the state controlled by the inputs below. The
+        input state in the model is None when the window is closed, so it's reset
+        each time the window is shown.
       </TextBlock>
       <TextBlock Margin="0,10,0,0" Text="Input" />
       <TextBox Margin="0,5,0,5" Text="{Binding Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
       <TextBlock Text="Checkbox:" />
       <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" />
       <TextBlock Foreground="Red" Visibility="{Binding SubmitMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-      Submit clicked, repeat to submit
+        Submit clicked, repeat to submit
       </TextBlock>
       <TextBlock Foreground="Red" Visibility="{Binding CancelMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-      Cancel clicked, repeat to cancel
+        Cancel clicked, repeat to cancel
       </TextBlock>
       <TextBlock
         Visibility="{Binding CloseMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-        Foreground="Red">
-      External close requested, repeat to close
-      </TextBlock>
+        Foreground="Red"
+        Text="External close requested, repeat to close" />
       <StackPanel
-      Margin="0,10,0,0"
-      HorizontalAlignment="Right"
-      Orientation="Horizontal">
+        Margin="0,10,0,0"
+        HorizontalAlignment="Right"
+        Orientation="Horizontal">
         <Button
-        Width="100"
-        Margin="0,0,10,0"
-        Command="{Binding Cancel}"
-        Content="Cancel" />
+          Width="100"
+          Margin="0,0,10,0"
+          Command="{Binding Cancel}"
+          Content="Cancel" />
         <Button
-        Width="100"
-        Command="{Binding Submit}"
-        Content="Submit"
-        Style="{StaticResource AccentButtonStyle}" />
+          Width="100"
+          Command="{Binding Submit}"
+          Content="Submit"
+          Style="{StaticResource AccentButtonStyle}" />
       </StackPanel>
     </StackPanel>
   </Page>
