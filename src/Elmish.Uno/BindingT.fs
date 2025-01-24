@@ -303,6 +303,42 @@ type BindingT private () =
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member oneWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: seq<'b> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
+    Binding.OneWaySeqT.createIncrementalLoading map itemEquals getId hasMore loadMore
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
   /// <param name="getGrouppingKey">Gets a key used to group items.</param>
   /// <param name="compareKeys">Compares two keys.</param>
   static member oneWaySeqLazy
@@ -316,6 +352,47 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableLookup<'key, 'b>> =
     let compareKeys = compareKeys |> withNull |> ValueOption.ofObj
     Binding.OneWaySeqT.createGrouped map itemEquals getId getGrouppingKey compareKeys
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getGrouppingKey">Gets a key used to group items.</param>
+  /// <param name="compareKeys">Compares two keys.</param>
+  static member oneWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: seq<'b> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getGrouppingKey: 'b -> 'key,
+       [<Optional>] compareKeys: 'key -> 'key -> int)
+      : string -> Binding<'model, 'msg, ObservableLookup<'key, 'b>> =
+    let compareKeys = compareKeys |> withNull |> ValueOption.ofObj
+    Binding.OneWaySeqT.createGroupedIncrementalLoading map itemEquals getId getGrouppingKey compareKeys hasMore loadMore
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -365,6 +442,37 @@ type BindingT private () =
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member oneWaySeq
+      (get: 'model -> seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.OneWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
   /// <param name="getGrouppingKey">Gets a key used to group items.</param>
   /// <param name="compareKeys">Compares two keys.</param>
   static member oneWaySeq
@@ -376,6 +484,42 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableLookup<'key, 'a>> =
     let compareKeys = compareKeys |> withNull |> ValueOption.ofObj
     Binding.OneWaySeqT.createGrouped id itemEquals getId getGrouppingKey compareKeys
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getGrouppingKey">Gets a key used to group items.</param>
+  /// <param name="compareKeys">Compares two keys.</param>
+  static member oneWaySeq
+      (get: 'model -> seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getGrouppingKey: 'a -> 'key,
+       [<Optional>] compareKeys: 'key -> 'key -> int)
+      : string -> Binding<'model, 'msg, ObservableLookup<'key, 'a>> =
+    let compareKeys = compareKeys |> withNull |> ValueOption.ofObj
+    Binding.OneWaySeqT.createGroupedIncrementalLoading id itemEquals getId getGrouppingKey compareKeys hasMore loadMore
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -909,6 +1053,7 @@ type BindingT private () =
   ///   Indicates whether two collection items are equal. Good candidates are
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
   /// <param name="update">Updates the collection from UI.</param>
   static member twoWaySeq
       (get: 'model -> seq<'T>,
@@ -917,6 +1062,39 @@ type BindingT private () =
        update: NotifyCollectionChangedEventArgs -> seq<'T> -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
     Binding.TwoWaySeqT.create id itemEquals getId update
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="twoWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeq
+      (get: 'model -> seq<'T>,
+       itemEquals: 'T -> 'T -> bool,
+       getId: 'T -> 'id,
+       hasMore: seq<'T> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> seq<'T> -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
+    Binding.TwoWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore update
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -947,6 +1125,40 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
     let update args _ = update args
     Binding.TwoWaySeqT.create id itemEquals getId update
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="twoWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeq
+      (get: 'model -> seq<'T>,
+       itemEquals: 'T -> 'T -> bool,
+       getId: 'T -> 'id,
+       hasMore: seq<'T> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
+    let update args _ = update args
+    Binding.TwoWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore update
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1006,6 +1218,44 @@ type BindingT private () =
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeqLazy
+      (get: 'model -> 'T,
+       equals: 'T -> 'T -> bool,
+       map: 'T -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: seq<'b> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> seq<'b> -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
+    Binding.TwoWaySeqT.createIncrementalLoading map itemEquals getId hasMore loadMore update
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
   /// <param name="update">Updates the collection from UI.</param>
   static member twoWaySeqLazy
       (get: 'model -> 'T,
@@ -1017,6 +1267,45 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
     let update args _ = update args
     Binding.TwoWaySeqT.create map itemEquals getId update
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeqLazy
+      (get: 'model -> 'T,
+       equals: 'T -> 'T -> bool,
+       map: 'T -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: seq<'b> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
+    let update args _ = update args
+    Binding.TwoWaySeqT.createIncrementalLoading map itemEquals getId hasMore loadMore update
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -2026,6 +2315,40 @@ type BindingT private () =
     >> Binding.mapModel getSubModels
     >> Binding.mapMsg toMsg
 
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       toMsg: 'id * 'subMsg -> 'msg,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.createIncrementalLoading
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+      hasMore
+      loadMore
+    >> Binding.mapModel getSubModels
+    >> Binding.mapMsg toMsg
+
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -2072,6 +2395,34 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.createIncrementalLoading
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+      hasMore
+      loadMore
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -2087,6 +2438,27 @@ type BindingT private () =
        getSubModels: 'model -> #seq<'subModel>)
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
     Binding.SubModelSeqUnkeyedT.create createVm
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
@@ -2132,6 +2504,30 @@ type BindingT private () =
       getId
       (IViewModel.currentModel >> getId)
 
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.createIncrementalLoading
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+      hasMore
+      loadMore
+
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -2144,6 +2540,22 @@ type BindingT private () =
       createVm
       : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
     Binding.SubModelSeqUnkeyedT.create createVm
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
 
 
   /// <summary>
@@ -2735,6 +3147,7 @@ module ExtensionsT =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+
 
     /// <summary>
     ///   Creates a <c>Command</c> binding that dispatches the specified message

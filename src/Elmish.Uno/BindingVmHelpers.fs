@@ -83,13 +83,13 @@ type OneWayToSourceBinding<'model, 'T> = {
   Set: 'T -> 'model -> unit
 }
 
-type OneWaySeqBinding<'model, 'T, 'aCollection, 'id when 'id : equality and 'id : not null> = {
-  OneWaySeqData: OneWaySeqData<'model, 'T, 'aCollection, 'id>
+type OneWaySeqBinding<'model, 'msg, 'T, 'aCollection, 'id when 'id : equality and 'id : not null> = {
+  OneWaySeqData: OneWaySeqData<'model, 'msg, 'T, 'aCollection, 'id>
   Values: CollectionTarget<'T, 'aCollection>
 }
 
-type OneWaySeqGroupedBinding<'model, 'T, 'aCollection, 'id, 'key when 'id : equality and 'id : not null and 'key : equality and 'key : not null> = {
-  OneWaySeqGroupedData: OneWaySeqGroupedData<'model, 'T, 'aCollection, 'id, 'key>
+type OneWaySeqGroupedBinding<'model, 'msg, 'T, 'aCollection, 'id, 'key when 'id : equality and 'id : not null and 'key : equality and 'key : not null> = {
+  OneWaySeqGroupedData: OneWaySeqGroupedData<'model, 'msg, 'T, 'aCollection, 'id, 'key>
   Values: GroupedCollectionTarget<'T, 'aCollection, 'key>
 }
 
@@ -167,8 +167,8 @@ type SubModelSelectedItemBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 
 
 type BaseVmBinding<'model, 'msg, 't> =
   | OneWay of OneWayBinding<'model, 't>
-  | OneWaySeq of OneWaySeqBinding<'model, objnull, 't, obj>
-  | OneWaySeqGrouped of OneWaySeqGroupedBinding<'model, objnull, 't, obj, obj>
+  | OneWaySeq of OneWaySeqBinding<'model, 'msg, objnull, 't, obj>
+  | OneWaySeqGrouped of OneWaySeqGroupedBinding<'model, 'msg, objnull, 't, obj, obj>
   | TwoWay of TwoWayBinding<'model, 't>
   | TwoWaySeq of TwoWaySeqBinding<'model, 'msg, objnull, 't, obj>
   | Cmd of cmd: Command
@@ -228,7 +228,7 @@ module internal MapOutputType =
     | OneWaySeq b -> OneWaySeq {
         OneWaySeqData = {
           Get = b.OneWaySeqData.Get
-          CreateCollection = b.OneWaySeqData.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection b.OneWaySeqData.CreateCollection (CollectionTarget.mapCollection fOut)
           GetId = b.OneWaySeqData.GetId
           ItemEquals = b.OneWaySeqData.ItemEquals }
         Values = b.Values |> CollectionTarget.mapCollection fOut }
@@ -236,7 +236,7 @@ module internal MapOutputType =
         OneWaySeqGroupedData = {
           Get = b.OneWaySeqGroupedData.Get
           GetKey = b.OneWaySeqGroupedData.GetKey
-          CreateCollection = b.OneWaySeqGroupedData.CreateCollection >> GroupedCollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection b.OneWaySeqGroupedData.CreateCollection (GroupedCollectionTarget.mapCollection fOut)
           GetId = b.OneWaySeqGroupedData.GetId
           KeyComparer = b.OneWaySeqGroupedData.KeyComparer
           ItemEquals = b.OneWaySeqGroupedData.ItemEquals }
@@ -244,7 +244,7 @@ module internal MapOutputType =
     | TwoWaySeq b -> TwoWaySeq {
         TwoWaySeqData = {
           Get = b.TwoWaySeqData.Get
-          CreateCollection = b.TwoWaySeqData.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection b.TwoWaySeqData.CreateCollection (CollectionTarget.mapCollection fOut)
           GetId = b.TwoWaySeqData.GetId
           ItemEquals = b.TwoWaySeqData.ItemEquals
           Update = b.TwoWaySeqData.Update }
@@ -279,7 +279,7 @@ module internal MapOutputType =
         SubModelSeqUnkeyedData = {
           GetModels = b.SubModelSeqUnkeyedData.GetModels
           CreateViewModel = b.SubModelSeqUnkeyedData.CreateViewModel
-          CreateCollection = b.SubModelSeqUnkeyedData.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection b.SubModelSeqUnkeyedData.CreateCollection (CollectionTarget.mapCollection fOut)
           UpdateViewModel = b.SubModelSeqUnkeyedData.UpdateViewModel
           ToMsg = b.SubModelSeqUnkeyedData.ToMsg }
         Dispatch = b.Dispatch
@@ -289,7 +289,7 @@ module internal MapOutputType =
         SubModelSeqKeyedData = {
           GetSubModels = b.SubModelSeqKeyedData.GetSubModels
           CreateViewModel = b.SubModelSeqKeyedData.CreateViewModel
-          CreateCollection = b.SubModelSeqKeyedData.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection b.SubModelSeqKeyedData.CreateCollection (CollectionTarget.mapCollection fOut)
           UpdateViewModel = b.SubModelSeqKeyedData.UpdateViewModel
           ToMsg = b.SubModelSeqKeyedData.ToMsg
           BmToId = b.SubModelSeqKeyedData.BmToId
@@ -400,7 +400,7 @@ type Initialize<'t>
 
   member _.Base<'model, 'msg>
       (initialModel: 'model,
-       dispatch: 'msg -> unit,
+       dispatch: Dispatch<'msg>,
        getCurrentModel: unit -> 'model,
        binding: BaseBindingData<'model, 'msg, 't>)
       : BaseVmBinding<'model, 'msg, 't> option =
@@ -411,12 +411,12 @@ type Initialize<'t>
           |> Some
       | OneWaySeqData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeq.measureFunctions measure measure measure2
-            Values = d.CreateCollection (initialModel |> d.Get) }
+            Values = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get) }
           |> OneWaySeq
           |> Some
       | OneWaySeqGroupedData d ->
           { OneWaySeqGroupedData = d |> BindingData.OneWaySeqGrouped.measureFunctions measure measure measure2
-            Values = d.CreateCollection (initialModel |> d.Get) }
+            Values = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get) }
           |> OneWaySeqGrouped
           |> Some
       | TwoWayData d ->
@@ -426,7 +426,7 @@ type Initialize<'t>
           |> TwoWay
           |> Some
       | TwoWaySeqData d ->
-          let collectionTarget = d.CreateCollection (initialModel |> d.Get)
+          let collectionTarget = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get)
           let bindingData =
             { TwoWaySeqData = d |> BindingData.TwoWaySeq.measureFunctions measure measure measure2
               Values = collectionTarget
@@ -500,13 +500,14 @@ type Initialize<'t>
           let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
-            d.GetModels initialModel
-            |> Seq.indexed
-            |> Seq.map (fun (idx, m) ->
-                 let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
-                 let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
-                 d.CreateViewModel args)
-            |> d.CreateCollection
+            let items =
+              d.GetModels initialModel
+              |> Seq.indexed
+              |> Seq.map (fun (idx, m) ->
+                   let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
+                   let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
+                   d.CreateViewModel args)
+            d.CreateCollection getCurrentModel (unbox >> dispatch) items
           { SubModelSeqUnkeyedData = d
             Dispatch = dispatch
             Vms = vms
@@ -518,13 +519,14 @@ type Initialize<'t>
           let d = d |> BindingData.SubModelSeqKeyed.measureFunctions measure measure measure measure measure2 measure measure
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
           let vms =
-            d.GetSubModels initialModel
-            |> Seq.map (fun m ->
-                 let mId = d.BmToId m
-                 let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
-                 let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
-                 d.CreateViewModel args)
-            |> d.CreateCollection
+            let items =
+              d.GetSubModels initialModel
+              |> Seq.map (fun m ->
+                   let mId = d.BmToId m
+                   let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
+                   let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
+                   d.CreateViewModel args)
+            d.CreateCollection getCurrentModel (unbox >> dispatch) items
           { SubModelSeqKeyedData = d
             Dispatch = dispatch
             Vms = vms

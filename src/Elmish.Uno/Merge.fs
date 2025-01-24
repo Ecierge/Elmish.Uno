@@ -19,7 +19,7 @@ type DuplicateIdException (sourceOrTarget: SourceOrTarget, index1: int, index2: 
   member this.Index2 = index2
   member this.Id = id
 
-type CollectionTarget<'T, 'aCollection> =
+type CollectionTarget<'T, 'Collection> =
   { GetLength: unit -> int
     GetAt: int -> 'T
     Append: 'T -> unit
@@ -29,16 +29,22 @@ type CollectionTarget<'T, 'aCollection> =
     Move: int * int -> unit
     Clear: unit -> unit
     Enumerate: unit -> IEnumerable
-    GetCollection: unit -> 'aCollection }
+    GetCollection: unit -> 'Collection }
 
-type GroupedCollectionTarget<'T, 'aCollection, 'key when 'key : not null> =
-  { CompareKeys: 'key -> 'key -> int
-    GetKeys: unit -> 'key seq
-    Get: 'key -> IList
-    Add: 'key -> 'T seq -> unit
-    Remove: 'key -> unit
+type GroupedCollectionTarget<'T, 'Collection, 'Key when 'Key : not null> =
+  { CompareKeys: 'Key -> 'Key -> int
+    GetKeys: unit -> 'Key seq
+    Get: 'Key -> IList
+    Add: 'Key -> 'T seq -> unit
+    Remove: 'Key -> unit
     Clear: unit -> unit
-    GetCollection: unit -> 'aCollection }
+    GetCollection: unit -> 'Collection }
+
+let internal mapCreateCollection createCollection mapCollectionTarget getModel dispatch model =
+  createCollection getModel dispatch model |> mapCollectionTarget
+
+let internal mapCollectionModel createCollection mapModel getModel dispatch model =
+  createCollection (getModel >> mapModel) dispatch model
 
 module CollectionTarget =
 
