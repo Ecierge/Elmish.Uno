@@ -162,7 +162,7 @@ type DynamicViewModel<'model, 'msg when 'model : not null and 'msg : not null>
 
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
 
-    let bindingDict = Dictionary<string, VmBinding<'model, 'msg, obj>>(bindings.Length)
+    let bindingDict = Dictionary<string, VmBinding<'model, 'msg, objnull>>(bindings.Length)
     let validationDict = Dictionary<string, string list ref>()
 
     let sortedBindings =
@@ -292,7 +292,7 @@ type DynamicViewModel<'model, 'msg when 'model : not null and 'msg : not null>
 
 and GetCustomProperty(name: string) =
 
-  member internal _.Base (rootBinding: VmBinding<'model, 'msg, objnull>, vmBinding: BaseVmBinding<'bindingModel, 'bindingMsg, obj>) : ICustomProperty | null =
+  member internal _.Base (rootBinding: VmBinding<'model, 'msg, objnull>, vmBinding: BaseVmBinding<'bindingModel, 'bindingMsg, objnull>) : ICustomProperty | null =
     match vmBinding with
     | OneWay _ -> DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name, fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
     | TwoWay _ ->
@@ -342,8 +342,8 @@ and GetCustomProperty(name: string) =
         fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
 
   member internal this.Recursive<'model, 'msg, 'bindingModel, 'bindingMsg when 'model : not null and 'msg : not null>
-      (rootBinding: VmBinding<'model, 'msg, obj>,
-       binding: VmBinding<'bindingModel, 'bindingMsg, obj>)
+      (rootBinding: VmBinding<'model, 'msg, objnull>,
+       binding: VmBinding<'bindingModel, 'bindingMsg, objnull>)
       : ICustomProperty | null =
     match binding with
     | BaseVmBinding b -> this.Base(rootBinding, b)
@@ -359,7 +359,7 @@ open System.Runtime.InteropServices
 type ViewModelBase<'model, 'msg when 'model : not null and 'msg : not null>(args: ViewModelArgs<'model, 'msg>)
   as this =
 
-  let mutable setBindings = Map.empty<String, VmBinding<'model, 'msg, obj>>
+  let mutable setBindings = Map.empty<String, VmBinding<'model, 'msg, objnull>>
 
   let mutable helper = ViewModelHelper.empty (fun () -> this) args
 

@@ -326,7 +326,7 @@ module internal MapOutputType =
         Validate = b.Validate
       }
 
-  let boxVm b : VmBinding<_, _, obj> = recursiveCase (fun vm -> vm :> obj) LanguagePrimitives.IntrinsicFunctions.UnboxFast b
+  let boxVm b : VmBinding<_, _, objnull> = recursiveCase box LanguagePrimitives.IntrinsicFunctions.UnboxFast b
   let unboxVm b = recursiveCase LanguagePrimitives.IntrinsicFunctions.UnboxFast box b
 
 type SubModelSelectedItemLast() =
@@ -565,7 +565,7 @@ type Initialize<'t>
           let d = d |> BindingData.Lazy.measureFunctions measure measure2 measure2
           let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
-                   Get = d.Get >> nonNull
+                   Get = d.Get
                    Equals = d.Equals
                  } |> Lazy
       | AlterMsgStreamData d ->
@@ -574,7 +574,7 @@ type Initialize<'t>
           let dispatch' : objnull -> unit = d.MapDispatch(getCurrentModel, dispatch)
           let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
           return { Binding = b
-                   Get = d.Get >> nonNull
+                   Get = d.Get
                  } |> AlterMsgStream
     }
 
