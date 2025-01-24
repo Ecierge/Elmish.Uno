@@ -2,8 +2,6 @@
 
 // fsharplint:disable MemberNames
 
-open System.Windows
-
 open Elmish
 open Elmish.Collections
 open System.Collections.Generic
@@ -12,7 +10,6 @@ open System.Collections.Specialized
 open System.Runtime.InteropServices
 open System.Windows.Input
 open Microsoft.UI.Xaml
-
 
 module Binding =
   open BindingData
@@ -206,7 +203,20 @@ module Binding =
     /// <param name="get">Returns the items to bind to.</param>
     /// <param name="getGrouppingKey">Returns the key to group the items by.</param>
     let create<'a, 'item, 'id, 'msg when 'id : equality and 'id : not null> get itemEquals (getId : 'item -> 'id) : string -> Binding<'a, 'msg, ObservableCollection<'item>> =
-      OneWaySeq.create itemEquals getId
+      OneWaySeq.create itemEquals getId Static
+      |> BindingData.mapModel get
+      |> createBindingT
+
+    /// <summary>
+    /// Elemental instance of a OneWaySeqT binding
+    /// </summary>
+    /// <param name="get">Returns the items to bind to.</param>
+    /// <param name="itemEquals">Defines whether an item is "equal" and needs to be updated if the ids are the same</param>
+    /// <param name="getId">Unique identifier for each item in the list (for efficient updates).</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    let createIncrementalLoading<'model, 'item, 'id, 'msg when 'id : equality and 'id : not null> get itemEquals (getId : 'item -> 'id) hasMore (loadMore : LoadMoreItems<'msg>) : string -> Binding<'model, 'msg, ObservableCollection<'item>> =
+      OneWaySeq.create itemEquals getId (Loadable (hasMore, loadMore))
       |> BindingData.mapModel get
       |> createBindingT
 
@@ -219,12 +229,27 @@ module Binding =
       (compareGrouppingKeys : ('groupingKey -> 'groupingKey -> int) voption)
       : string -> Binding<'a, 'msg, ObservableLookup<'groupingKey, 'item>>
       =
-      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareGrouppingKeys
+      OneWaySeqGrouped.create itemEquals getId Static getGrouppingKey compareGrouppingKeys
+      |> BindingData.mapModel get
+      |> createBindingT
+
+    /// Elemental instance of a one-way-seq grouped binding.
+    let createGroupedIncrementalLoading<'model, 'item, 'id, 'groupingKey, 'msg when 'id : equality and 'id : not null and 'groupingKey : equality and 'groupingKey : not null>
+      (get : 'model -> 'item seq)
+      itemEquals
+      (getId : 'item -> 'id)
+      (getGrouppingKey : 'item -> 'groupingKey)
+      (compareGrouppingKeys : ('groupingKey -> 'groupingKey -> int) voption)
+      (hasMore : HasMoreItems<'model>)
+      (loadMore : LoadMoreItems<'msg>)
+      : string -> Binding<'model, 'msg, ObservableLookup<'groupingKey, 'item>>
+      =
+      OneWaySeqGrouped.create itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareGrouppingKeys
       |> BindingData.mapModel get
       |> createBindingT
 
     let id itemEquals (getId: 'a -> 'id) : string -> Binding<_, 'msg, _> =
-      OneWaySeq.create itemEquals getId
+      OneWaySeq.create itemEquals getId Static
       |> createBindingT
 
   [<RequireQualifiedAccess>]
@@ -238,7 +263,19 @@ module Binding =
       (update : NotifyCollectionChangedEventArgs -> 'model -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'item>>
       =
-      TwoWaySeq.create get itemEquals getId update
+      TwoWaySeq.create get itemEquals getId Static update
+      |> createBindingT
+
+    /// Elemental instance of a one-way-seq binding.
+    let createIncrementalLoading<'model, 'item, 'id, 'msg when 'id : equality and 'id : not null>
+      (get : 'model -> seq<'item>)
+      (itemEquals: 'item -> 'item -> bool)
+      (getId : 'item -> 'id)
+      hasMore (loadMore : LoadMoreItems<'msg>)
+      (update : NotifyCollectionChangedEventArgs -> 'model -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'item>>
+      =
+      TwoWaySeq.create get itemEquals getId (Loadable (hasMore, loadMore)) update
       |> createBindingT
 
   /// <summary>
@@ -490,22 +527,22 @@ module Binding =
 
   module OneWaySeq =
 
-    let internal create get itemEquals getId =
-      OneWaySeq.create itemEquals getId
+    let internal create get itemEquals getId incemementalLoader =
+      OneWaySeq.create itemEquals getId incemementalLoader
       |> BindingData.mapModel get
       |> createBinding
 
 
-    let internal createGrouped get itemEquals getId getGrouppingKey compareKeys =
-      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareKeys
+    let internal createGrouped get itemEquals getId getGrouppingKey compareKeys incemementalLoader =
+      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareKeys incemementalLoader
       |> BindingData.mapModel get
       |> createBinding
 
 
   module TwoWaySeq =
 
-    let internal create get itemEquals getId update =
-      TwoWaySeq.create get itemEquals getId update
+    let internal create get itemEquals getId incemementalLoader update =
+      TwoWaySeq.create get itemEquals getId incemementalLoader update
       |> createBinding
 
 
@@ -642,7 +679,23 @@ module Binding =
       (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
       : (string -> Binding<'bindingModelCollection, int * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
       =
-      SubModelSeqUnkeyed.create createVm IViewModel.updateModel
+      SubModelSeqUnkeyed.create createVm IViewModel.updateModel Static
+      |> createBindingT
+
+    /// <summary>
+    ///   Creates an elemental <c>SubModelSeqUnkeyedT</c> binding.
+    /// </summary>
+    /// <param name="createVm">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to create a child view model.
+    /// </param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    let createIncrementalLoading
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>) hasMore loadMore
+      : (string -> Binding<'bindingModelCollection, int * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
+      =
+      SubModelSeqUnkeyed.create createVm IViewModel.updateModel (Loadable (hasMore, loadMore))
       |> createBindingT
 
   /// <summary>
@@ -671,7 +724,31 @@ module Binding =
       vmToId
       : (string -> Binding<'bindingModelCollection, 'id * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
       =
-      SubModelSeqKeyed.create createVm IViewModel.updateModel getId vmToId
+      SubModelSeqKeyed.create createVm IViewModel.updateModel getId vmToId Static
+      |> createBindingT
+
+    /// <summary>
+    ///   Creates an elemental <c>SubModelSeqUnkeyedT</c> binding.
+    /// </summary>
+    /// <param name="createVm">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to create a child view model.
+    /// </param>
+    /// <param name="getId">
+    ///   The function applied to every element of the bound <c>ObservableCollection</c>
+    ///   to get a key used to identify that element.
+    ///   Should not return duplicate keys for different elements.
+    /// </param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    let createIncrementalLoading
+      (createVm: ViewModelArgs<'bindingModel, 'msg> -> #IViewModel<'bindingModel, 'msg>)
+      (getId: 'bindingModel -> 'id)
+      vmToId
+      hasMore loadMore
+      : (string -> Binding<'bindingModelCollection, 'id * 'msg, ObservableCollection<#IViewModel<'bindingModel, 'msg>>>)
+      =
+      SubModelSeqKeyed.create createVm IViewModel.updateModel getId vmToId (Loadable (hasMore, loadMore))
       |> createBindingT
 
   /// <summary>
@@ -758,15 +835,15 @@ module Binding =
 
   module SubModelSeqUnkeyed =
 
-    let internal create createViewModel updateViewModel =
-      SubModelSeqUnkeyed.create createViewModel updateViewModel
+    let internal create createViewModel updateViewModel incemementalLoader =
+      SubModelSeqUnkeyed.create createViewModel updateViewModel incemementalLoader
       |> createBinding
 
 
   module SubModelSeqKeyed =
 
-    let internal create createViewModel updateViewModel bmToId vmToId =
-      SubModelSeqKeyed.create createViewModel updateViewModel bmToId vmToId
+    let internal create createViewModel updateViewModel bmToId vmToId incemementalLoader =
+      SubModelSeqKeyed.create createViewModel updateViewModel bmToId vmToId incemementalLoader
       |> createBinding
 
 
@@ -966,7 +1043,43 @@ type Binding private () =
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id)
       : string -> Binding<'model, 'msg> =
-    Binding.OneWaySeq.create map itemEquals getId
+    Binding.OneWaySeq.create map itemEquals getId Static
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member oneWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> #seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.OneWaySeq.create map itemEquals getId (Loadable (hasMore, loadMore))
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -1003,7 +1116,48 @@ type Binding private () =
        [<Optional>] compareKeys: ('key -> 'key -> int) | null)
       : string -> Binding<'model, 'msg> =
     let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped map itemEquals getId getGrouppingKey compareKeys
+    Binding.OneWaySeq.createGrouped map itemEquals getId Static getGrouppingKey compareKeys
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getGrouppingKey">Gets a key used to group items.</param>
+  /// <param name="compareGrouppingKeys">Compares two groupping keys.</param>
+  static member oneWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> #seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getGrouppingKey: 'b -> 'key,
+       [<Optional>] compareKeys: ('key -> 'key -> int) | null)
+      : string -> Binding<'model, 'msg> =
+    let compareKeys = compareKeys |> ValueOption.ofObj
+    Binding.OneWaySeq.createGrouped map itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareKeys
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -1025,12 +1179,44 @@ type Binding private () =
   ///   Indicates whether two collection items are equal. Good candidates are
   ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
   /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
   static member oneWaySeq
       (get: 'model -> #seq<'a>,
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id)
       : string -> Binding<'model, 'msg> =
-    Binding.OneWaySeq.create id itemEquals getId
+    Binding.OneWaySeq.create id itemEquals getId Static
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member oneWaySeq
+      (get: 'model -> #seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.OneWaySeq.create id itemEquals getId (Loadable (hasMore, loadMore))
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1060,7 +1246,41 @@ type Binding private () =
        [<Optional>] compareKeys: ('key -> 'key -> int) | null)
       : string -> Binding<'model, 'msg> =
     let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped id itemEquals getId getGrouppingKey compareKeys
+    Binding.OneWaySeq.createGrouped id itemEquals getId Static getGrouppingKey compareKeys
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a one-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member oneWaySeq
+      (get: 'model -> #seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getGrouppingKey: 'a -> 'key,
+       [<Optional>] compareKeys: ('key -> 'key -> int) | null)
+      : string -> Binding<'model, 'msg> =
+    let compareKeys = compareKeys |> ValueOption.ofObj
+    Binding.OneWaySeq.createGrouped id itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareKeys
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1393,7 +1613,39 @@ type Binding private () =
        getId: 'a -> 'id,
        update: NotifyCollectionChangedEventArgs -> seq<'a> -> 'msg)
       : string -> Binding<'model, 'msg> =
-    Binding.TwoWaySeq.create id itemEquals getId update
+    Binding.TwoWaySeq.create id itemEquals getId Static update
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="twoWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeq
+      (get: 'model -> seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> seq<'a> -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.TwoWaySeq.create id itemEquals getId (Loadable (hasMore, loadMore)) update
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1423,7 +1675,40 @@ type Binding private () =
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg> =
     let update args _ = update args
-    Binding.TwoWaySeq.create id itemEquals getId update
+    Binding.TwoWaySeq.create id itemEquals getId Static update
+    >> Binding.addLazy refEq
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   is referentially equal. This is the same as calling
+  ///   <see cref="twoWaySeqLazy"/> with <c>equals = refEq</c> and
+  ///   <c>map = id</c>. The binding is backed by a persistent
+  ///   <c>ObservableCollection</c>, so only changed items (as determined by
+  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
+  ///   complex and you want them updated instead of replaced, consider using
+  ///   <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the collection from the model.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeq
+      (get: 'model -> seq<'a>,
+       itemEquals: 'a -> 'a -> bool,
+       getId: 'a -> 'id,
+       hasMore: seq<'a> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    let update args _ = update args
+    Binding.TwoWaySeq.create id itemEquals getId (Loadable (hasMore, loadMore)) update
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
@@ -1458,7 +1743,45 @@ type Binding private () =
        getId: 'b -> 'id,
        update: NotifyCollectionChangedEventArgs -> seq<'b> -> 'msg)
       : string -> Binding<'model, 'msg> =
-    Binding.TwoWaySeq.create map itemEquals getId update
+    Binding.TwoWaySeq.create map itemEquals getId Static update
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: 'a -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> seq<'b> -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.TwoWaySeq.create map itemEquals getId (Loadable (hasMore, loadMore)) update
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -1493,7 +1816,46 @@ type Binding private () =
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg> =
     let update args _ = update args
-    Binding.TwoWaySeq.create map itemEquals getId update
+    Binding.TwoWaySeq.create map itemEquals getId Static update
+    >> Binding.addLazy equals
+    >> Binding.mapModel get
+
+  /// <summary>
+  ///   Creates a two-way binding to a sequence of items, each uniquely
+  ///   identified by the value returned by <paramref name="getId"/>. The
+  ///   binding will not be updated if the output of <paramref name="get"/>
+  ///   does not change, as determined by <paramref name="equals"/>.
+  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
+  ///   only changed items (as determined by <paramref name="itemEquals"/>)
+  ///   will be replaced. If the items are complex and you want them updated
+  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
+  /// </summary>
+  /// <param name="get">Gets the intermediate value from the model.</param>
+  /// <param name="equals">
+  ///   Indicates whether two intermediate values are equal. Good candidates are
+  ///   <c>elmEq</c> and <c>refEq</c>.
+  /// </param>
+  /// <param name="map">Transforms the value into the final collection.</param>
+  /// <param name="itemEquals">
+  ///   Indicates whether two collection items are equal. Good candidates are
+  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a collection item.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="update">Updates the collection from UI.</param>
+  static member twoWaySeqLazy
+      (get: 'model -> 'a,
+       equals: 'a -> 'a -> bool,
+       map: 'a -> seq<'b>,
+       itemEquals: 'b -> 'b -> bool,
+       getId: 'b -> 'id,
+       hasMore: 'a -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       update: NotifyCollectionChangedEventArgs -> 'msg)
+      : string -> Binding<'model, 'msg> =
+    let update args _ = update args
+    Binding.TwoWaySeq.create map itemEquals getId (Loadable (hasMore, loadMore)) update
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -2751,6 +3113,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2784,6 +3147,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2817,6 +3181,7 @@ type Binding private () =
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
@@ -2849,6 +3214,7 @@ type Binding private () =
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
@@ -2879,6 +3245,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg toMsg
 
@@ -2908,6 +3275,75 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       toMsg: 'id * 'subMsg -> 'msg,
+       hasMore: seq<'subModel> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       bindings: Binding<'subModel, 'subMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       toMsg: 'id * 'subMsg -> 'msg,
+       hasMore: seq<'subModel> -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getBindings: unit -> Binding<'subModel, 'subMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, getBindings ()))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg toMsg
 
@@ -2922,7 +3358,7 @@ type Binding private () =
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
-  static member subModelWithModelSeq
+  static member subModelSeqWithModel
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        bindings: Binding<'model * 'subModel, 'msg> list)
@@ -2932,6 +3368,7 @@ type Binding private () =
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
@@ -2955,7 +3392,57 @@ type Binding private () =
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
+      Static
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      Static
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      Static
+    >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
   /// <summary>
@@ -2969,34 +3456,12 @@ type Binding private () =
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="hasMore">Indicates whether there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeqWithModel
-      (getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       bindings: Binding<'model * 'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      (snd >> getId)
-      (IViewModel.currentModel >> snd >> getId)
-    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
-    >> Binding.mapMsg snd
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="bindings">The bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
        bindings: Binding<'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
@@ -3004,6 +3469,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
@@ -3016,10 +3482,14 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
   /// <param name="getBindings">Returns the bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
        getBindings: unit -> Binding<'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
@@ -3027,6 +3497,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
@@ -3046,6 +3517,7 @@ type Binding private () =
     Binding.SubModelSeqUnkeyed.create
       (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
       IViewModel.updateModel
+      Static
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
@@ -3064,6 +3536,57 @@ type Binding private () =
     Binding.SubModelSeqUnkeyed.create
       (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
       IViewModel.updateModel
+      Static
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+      (Loadable (hasMore, loadMore))
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+      IViewModel.updateModel
+      (Loadable (hasMore, loadMore))
     >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
 
@@ -3086,6 +3609,7 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -3105,6 +3629,57 @@ type Binding private () =
       IViewModel.updateModel
       getId
       (IViewModel.currentModel >> getId)
+      Static
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'id * 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getId: 'subModel -> 'id,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'id * 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
 
 
   /// <summary>
@@ -3120,6 +3695,7 @@ type Binding private () =
     Binding.SubModelSeqUnkeyed.create
       (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
       IViewModel.updateModel
+      Static
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -3134,6 +3710,49 @@ type Binding private () =
     Binding.SubModelSeqUnkeyed.create
       (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
       IViewModel.updateModel
+      Static
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, int * 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+      (Loadable (hasMore, loadMore))
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, int * 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+      IViewModel.updateModel
+      (Loadable (hasMore, loadMore))
 
 
   /// <summary>
@@ -3520,6 +4139,7 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
+
     /// <summary>
     ///   Creates a <c>Command</c> binding that dispatches the specified message
     ///   and can always execute.
@@ -3686,6 +4306,7 @@ module Extensions =
         IViewModel.updateModel
         getId
         (IViewModel.currentModel >> getId)
+        Static
 
     /// <summary>
     ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -3705,6 +4326,55 @@ module Extensions =
         IViewModel.updateModel
         getId
         (IViewModel.currentModel >> getId)
+        Static
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getId: 'model -> 'id,
+         hasMore: seq<'model> -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         bindings: Binding<'model, 'msg> list)
+        : string -> Binding<'model seq, 'id * 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'model, 'msg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getId: 'model -> 'id,
+         hasMore: seq<'model> -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         getBindings: unit -> Binding<'model, 'msg> list)
+        : string -> Binding<'model seq, 'id * 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
 
 
     /// <summary>

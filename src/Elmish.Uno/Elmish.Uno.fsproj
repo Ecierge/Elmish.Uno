@@ -61,6 +61,7 @@
 
   <ItemGroup>
     <Compile Include="InternalUtils.fs" />
+    <Compile Include="IncrementalLoadingCollection.fs" />
     <Compile Include="Merge.fs" />
     <Compile Include="Command.fs" />
     <Compile Include="Utils.fs" />

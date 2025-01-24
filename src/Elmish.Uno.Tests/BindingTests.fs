@@ -176,7 +176,7 @@ module oneWaySeq =
       let! x = GenX.auto<int>
 
       let get (i: int) = Seq.singleton i
-      let d = Binding.OneWaySeq.create get fail2 fail |> getOneWaySeqData
+      let d = Binding.OneWaySeq.create get fail2 fail Static |> getOneWaySeqData
 
       test <@ d.Get x |> Seq.map unbox |> Seq.toList = (get x |> Seq.toList) @>
     }
@@ -2567,7 +2567,7 @@ module subModelSeqKeyed =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelSeq(fail, fail, [])
+        let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2600,7 +2600,7 @@ module subModelSeqKeyed =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, [])
+        let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2633,7 +2633,7 @@ module subModelSeqKeyed =
       let ``sets the correct binding name`` () =
         Property.check <| property {
           let! bindingName = GenX.auto<string>
-          let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, fail, fail, [])
+          let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, fail, [])
           test <@ binding.Name = bindingName @>
         }
 

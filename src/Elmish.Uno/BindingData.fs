@@ -13,6 +13,15 @@ open Elmish
 open Elmish.Collections
 
 
+type UpdateCollection<'model, 'msg> = NotifyCollectionChangedEventArgs -> 'model -> 'msg
+type HasMoreItems<'model> = 'model -> bool
+type LoadMoreItems<'msg> = uint * (uint -> unit) -> 'msg
+[<Struct>]
+type IncrementalLoadingData<'model,'msg> =
+  | Static
+  | Loadable of hasMoreItems : HasMoreItems<'model> * loadMoreItems : LoadMoreItems<'msg>
+
+
 module Helper =
 
   let mapDispatch
@@ -27,13 +36,13 @@ type OneWayData<'model, 'T> =
   { Get: 'model -> 'T }
 
 
-type OneWaySeqData<'model, 'T, 'aCollection, 'id when 'id : equality and 'id : not null> =
+type OneWaySeqData<'model, 'msg, 'T, 'Collection, 'id when 'id : equality and 'id : not null> =
   { Get: 'model -> 'T seq
-    CreateCollection: 'T seq -> CollectionTarget<'T, 'aCollection>
+    CreateCollection: (unit -> 'model) -> Dispatch<obj> -> 'T seq -> CollectionTarget<'T, 'Collection>
     GetId: 'T -> 'id
     ItemEquals: 'T -> 'T -> bool }
 
-  member d.Merge(values: CollectionTarget<'T, 'aCollection>, newModel: 'model) =
+  member d.Merge(values: CollectionTarget<'T, 'Collection>, newModel: 'model) =
     let create v _ = v
     let update oldVal newVal oldIdx =
       if not (d.ItemEquals newVal oldVal) then
@@ -42,15 +51,15 @@ type OneWaySeqData<'model, 'T, 'aCollection, 'id when 'id : equality and 'id : n
     Merge.keyed d.GetId d.GetId create update values newVals
 
 
-type OneWaySeqGroupedData<'model, 'T, 'aCollection, 'id, 'key when 'id : equality and 'id : not null and 'key : equality and 'key : not null> =
+type OneWaySeqGroupedData<'model, 'msg, 'T, 'Collection, 'id, 'key when 'id : equality and 'id : not null and 'key : equality and 'key : not null> =
   { Get: 'model -> 'T seq
-    CreateCollection: 'T seq -> GroupedCollectionTarget<'T, 'aCollection, 'key>
+    CreateCollection: (unit -> 'model) -> Dispatch<obj> -> 'T seq -> GroupedCollectionTarget<'T, 'Collection, 'key>
     GetId: 'T -> 'id
     GetKey: 'T -> 'key
     KeyComparer: IComparer<'key>
     ItemEquals: 'T -> 'T -> bool }
 
-  member d.Merge(values: GroupedCollectionTarget<'T, 'aCollection, 'key>, newModel: 'model) =
+  member d.Merge(values: GroupedCollectionTarget<'T, 'Collection, 'key>, newModel: 'model) =
     let create v _ = v
     let update (values : CollectionTarget<'T, IList>) oldVal newVal oldIdx =
       if not (d.ItemEquals newVal oldVal) then
@@ -64,14 +73,14 @@ type TwoWayData<'model, 'msg, 'T> =
     Set: 'T -> 'model -> 'msg }
 
 
-type TwoWaySeqData<'model, 'msg, 'T, 'aCollection, 'id when 'id : equality and 'id : not null> =
+type TwoWaySeqData<'model, 'msg, 'T, 'Collection, 'id when 'id : equality and 'id : not null> =
   { Get: 'model -> 'T seq
-    CreateCollection: 'T seq -> CollectionTarget<'T, 'aCollection>
+    CreateCollection: (unit -> 'model) -> Dispatch<obj> -> 'T seq -> CollectionTarget<'T, 'Collection>
     GetId: 'T -> 'id
     ItemEquals: 'T -> 'T -> bool
-    Update: NotifyCollectionChangedEventArgs -> 'model -> 'msg }
+    Update: UpdateCollection<'model, 'msg> }
 
-  member d.Merge(values: CollectionTarget<'T, 'aCollection>, newModel: 'model) =
+  member d.Merge(values: CollectionTarget<'T, 'Collection>, newModel: 'model) =
     let create v _ = v
     let update oldVal newVal oldIdx =
       if not (d.ItemEquals newVal oldVal) then
@@ -113,7 +122,7 @@ and SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 and SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> =
   { GetModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
-    CreateCollection: 'vm seq -> CollectionTarget<'vm, 'vmCollection>
+    CreateCollection: (unit -> 'model) -> Dispatch<obj> -> 'vm seq -> CollectionTarget<'vm, 'vmCollection>
     UpdateViewModel: 'vm * 'bindingModel -> unit
     ToMsg: 'model -> int * 'bindingMsg -> 'msg }
 
@@ -121,7 +130,7 @@ and SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCol
 and SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id when 'id : equality and 'id : not null> =
   { GetSubModels: 'model -> 'bindingModel seq
     CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
-    CreateCollection: 'vm seq -> CollectionTarget<'vm, 'vmCollection>
+    CreateCollection: (unit -> 'model) -> Dispatch<obj> -> 'vm seq -> CollectionTarget<'vm, 'vmCollection>
     UpdateViewModel: 'vm * 'bindingModel -> unit
     ToMsg: 'model -> 'id * 'bindingMsg -> 'msg
     BmToId: 'bindingModel -> 'id
@@ -170,8 +179,8 @@ and AlterMsgStreamData<'model, 'msg, 'bindingModel, 'bindingMsg, 'dispatchMsg, '
 
 and BaseBindingData<'model, 'msg, 't> =
   | OneWayData of OneWayData<'model, 't>
-  | OneWaySeqData of OneWaySeqData<'model, objnull, 't, obj>
-  | OneWaySeqGroupedData of OneWaySeqGroupedData<'model, objnull, 't, obj, obj>
+  | OneWaySeqData of OneWaySeqData<'model, 'msg, objnull, 't, obj>
+  | OneWaySeqGroupedData of OneWaySeqGroupedData<'model, 'msg, objnull, 't, obj, obj>
   | TwoWayData of TwoWayData<'model, 'msg, 't>
   | TwoWaySeqData of TwoWaySeqData<'model, 'msg, objnull, 't, obj>
   | CmdData of CmdData<'model, 'msg>
@@ -202,13 +211,13 @@ module BindingData =
         }
       | OneWaySeqData d -> OneWaySeqData {
           Get = d.Get
-          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection d.CreateCollection (CollectionTarget.mapCollection fOut)
           GetId = d.GetId
           ItemEquals = d.ItemEquals
         }
       | OneWaySeqGroupedData d -> OneWaySeqGroupedData {
           Get = d.Get
-          CreateCollection = d.CreateCollection >> GroupedCollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection d.CreateCollection (GroupedCollectionTarget.mapCollection fOut)
           GetId = d.GetId
           GetKey = d.GetKey
           KeyComparer = d.KeyComparer
@@ -220,7 +229,7 @@ module BindingData =
         }
       | TwoWaySeqData d -> TwoWaySeqData {
           Get = d.Get
-          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection d.CreateCollection (CollectionTarget.mapCollection fOut)
           GetId = d.GetId
           ItemEquals = d.ItemEquals
           Update = d.Update
@@ -246,14 +255,14 @@ module BindingData =
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = d.GetModels
           CreateViewModel = d.CreateViewModel
-          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection d.CreateCollection (CollectionTarget.mapCollection fOut)
           UpdateViewModel = d.UpdateViewModel
           ToMsg = d.ToMsg
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = d.GetSubModels
           CreateViewModel = d.CreateViewModel
-          CreateCollection = d.CreateCollection >> CollectionTarget.mapCollection fOut
+          CreateCollection = mapCreateCollection d.CreateCollection (CollectionTarget.mapCollection fOut)
           UpdateViewModel = d.UpdateViewModel
           ToMsg = d.ToMsg
           VmToId = d.VmToId
@@ -290,7 +299,7 @@ module BindingData =
   let boxT b = MapT.recursiveCase box unbox b
   let unboxT b = MapT.recursiveCase unbox box b
 
-  let mapModel f =
+  let mapModel (f : 'm -> 'm0) =
     let binaryHelper binary x m = binary x (f m)
     let baseCase = function
       | OneWayData d -> OneWayData {
@@ -298,13 +307,13 @@ module BindingData =
         }
       | OneWaySeqData d -> OneWaySeqData {
           Get = f >> d.Get
-          CreateCollection = d.CreateCollection
+          CreateCollection = mapCollectionModel d.CreateCollection f
           GetId = d.GetId
           ItemEquals = d.ItemEquals
         }
       | OneWaySeqGroupedData d -> OneWaySeqGroupedData {
           Get = f >> d.Get
-          CreateCollection = d.CreateCollection
+          CreateCollection = mapCollectionModel d.CreateCollection f
           GetId = d.GetId
           GetKey = d.GetKey
           KeyComparer = d.KeyComparer
@@ -316,7 +325,7 @@ module BindingData =
         }
       | TwoWaySeqData d -> TwoWaySeqData {
           Get = f >> d.Get
-          CreateCollection = d.CreateCollection
+          CreateCollection = mapCollectionModel d.CreateCollection f
           GetId = d.GetId
           ItemEquals = d.ItemEquals
           Update = fun args m -> d.Update args (f m)
@@ -342,14 +351,14 @@ module BindingData =
       | SubModelSeqUnkeyedData d -> SubModelSeqUnkeyedData {
           GetModels = f >> d.GetModels
           CreateViewModel = d.CreateViewModel
-          CreateCollection = d.CreateCollection
+          CreateCollection = mapCollectionModel d.CreateCollection f
           UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
         }
       | SubModelSeqKeyedData d -> SubModelSeqKeyedData {
           GetSubModels = f >> d.GetSubModels
           CreateViewModel = d.CreateViewModel
-          CreateCollection = d.CreateCollection
+          CreateCollection = mapCollectionModel d.CreateCollection f
           UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
           BmToId = d.BmToId
@@ -381,11 +390,23 @@ module BindingData =
         }
     recursiveCase
 
-  let mapMsgWithModel (f: 'T -> 'model -> 'b) =
+  let mapMsgWithModel (f: 'msg -> 'model -> 'msg0) =
     let baseCase = function
       | OneWayData d -> d |> OneWayData
-      | OneWaySeqData d -> d |> OneWaySeqData
-      | OneWaySeqGroupedData d -> d |> OneWaySeqGroupedData
+      | OneWaySeqData d -> OneWaySeqData {
+          Get = d.Get
+          CreateCollection = d.CreateCollection
+          GetId = d.GetId
+          ItemEquals = d.ItemEquals
+        }
+      | OneWaySeqGroupedData d -> OneWaySeqGroupedData {
+          Get = d.Get
+          CreateCollection = d.CreateCollection
+          GetId = d.GetId
+          GetKey = d.GetKey
+          KeyComparer = d.KeyComparer
+          ItemEquals = d.ItemEquals
+        }
       | TwoWayData d -> TwoWayData {
           Get = d.Get
           Set = fun v m -> f (d.Set v m) m
@@ -456,6 +477,7 @@ module BindingData =
           AlterMsgStream = d.AlterMsgStream
         }
     recursiveCase
+
 
   let mapMsg f = mapMsgWithModel (fun a _ -> f a)
 
@@ -529,18 +551,23 @@ module BindingData =
         (outMapA: 'T -> 'a0)
         (outMapId: 'id -> 'id0)
         (inMapA: 'a0 -> 'T)
-        (d: OneWaySeqData<'model, 'T, 'aCollection, 'id>) = {
+        (d: OneWaySeqData<'model, 'msg, 'T, 'aCollection, 'id>) = {
       Get = d.Get >> Seq.map outMapA
-      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.mapA outMapA inMapA
+      CreateCollection = fun getModel dispatch items -> d.CreateCollection getModel dispatch (items |> Seq.map inMapA) |> CollectionTarget.mapA outMapA inMapA
       GetId = inMapA >> d.GetId >> outMapId
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
     }
 
     let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) unbox
 
-    let create itemEquals getId =
+    let create itemEquals getId incrementalLoader =
       { Get = (fun x -> upcast x)
-        CreateCollection = ObservableCollection >> CollectionTarget.create
+        CreateCollection =
+          fun getModel dispatch items ->
+            match incrementalLoader with
+            | Static -> items |> ObservableCollection |> CollectionTarget.create
+            | Loadable (hasMoreItems, loadMoreItems) ->
+              IncrementalLoadingCollection<'a> (items, getModel >> hasMoreItems, loadMoreItems >> box >> dispatch) |> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId }
       |> boxMinorTypes
@@ -551,7 +578,7 @@ module BindingData =
         mGet
         mGetId
         mItemEquals
-        (d: OneWaySeqData<'model, 'T, 'aCollection, 'id>) =
+        (d: OneWaySeqData<'model, 'msg, 'T, 'aCollection, 'id>) =
       { d with Get = mGet d.Get
                GetId = mGetId d.GetId
                ItemEquals = mItemEquals d.ItemEquals }
@@ -574,9 +601,9 @@ module BindingData =
         (outMapKey: 'key -> 'key0)
         (inMapA: 'a0 -> 'T)
         (inMapKey: 'key0 -> 'key)
-        (d: OneWaySeqGroupedData<'model, 'T, 'aCollection, 'id, 'key>) = {
+        (d: OneWaySeqGroupedData<'model, 'msg, 'T, 'aCollection, 'id, 'key>) = {
       Get = d.Get >> Seq.map outMapA
-      CreateCollection = Seq.map inMapA >> d.CreateCollection >> GroupedCollectionTarget.mapA inMapA outMapKey inMapKey
+      CreateCollection = fun getModel dispatch items -> d.CreateCollection getModel dispatch (items |> Seq.map inMapA) |> GroupedCollectionTarget.mapA inMapA outMapKey inMapKey
       GetId = inMapA >> d.GetId >> outMapId
       GetKey = inMapA >> d.GetKey >> outMapKey
       KeyComparer = Comparer.Create (fun k1 k2 -> d.KeyComparer.Compare (inMapKey k1, inMapKey k2))
@@ -585,10 +612,10 @@ module BindingData =
 
     let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) (fun key -> key :> obj) unbox unbox
 
-    let createWithComparer itemEquals getId getGrouppingKey keyComparer =
+    let createWithComparer itemEquals getId incrementalLoader getGrouppingKey keyComparer =
       { Get = (fun x -> upcast x)
         CreateCollection =
-          fun items -> items.ToObservableLookup<'key,_>(keyComparer, Func<_,'key>(getGrouppingKey)) |> GroupedCollectionTarget.create
+          fun _ _ items -> items.ToObservableLookup<'key,_>(keyComparer, Func<_,'key>(getGrouppingKey)) |> GroupedCollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId
         GetKey = getGrouppingKey
@@ -597,18 +624,18 @@ module BindingData =
       |> OneWaySeqGroupedData
       |> BaseBindingData
 
-    let create itemEquals getId getGrouppingKey (compareKeys : ('key -> 'key -> int) voption) =
+    let create itemEquals getId incrementalLoader getGrouppingKey (compareKeys : ('key -> 'key -> int) voption) =
       let comparer =
         match compareKeys with
         | ValueNone -> Comparer<'key>.Default
         | ValueSome compareKeys -> Comparer.Create (Comparison compareKeys)
-      createWithComparer itemEquals getId getGrouppingKey comparer
+      createWithComparer itemEquals getId incrementalLoader getGrouppingKey comparer
 
     let private mapFunctions
         mGet
         mGetId
         mItemEquals
-        (d: OneWaySeqGroupedData<'model, 'T, 'aCollection, 'id, 'GrouppingKey>) =
+        (d: OneWaySeqGroupedData<'model, 'msg, 'T, 'aCollection, 'id, 'GrouppingKey>) =
       { d with Get = mGet d.Get
                GetId = mGetId d.GetId
                ItemEquals = mItemEquals d.ItemEquals }
@@ -654,7 +681,7 @@ module BindingData =
         (inMapA: 'a0 -> 'T)
         (d: TwoWaySeqData<'model, 'msg, 'T, 'aCollection, 'id>) = {
       Get = d.Get >> Seq.map outMapA
-      CreateCollection = Seq.map inMapA >> d.CreateCollection >> CollectionTarget.mapA outMapA inMapA
+      CreateCollection = fun getModel dispatch items -> d.CreateCollection getModel dispatch (items |> Seq.map inMapA) |> CollectionTarget.mapA outMapA inMapA
       GetId = inMapA >> d.GetId >> outMapId
       ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
       Update = d.Update
@@ -662,9 +689,14 @@ module BindingData =
 
     let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) unbox
 
-    let create get itemEquals getId update =
+    let create get itemEquals getId incrementalLoader update =
       { Get = get
-        CreateCollection = ObservableCollection >> CollectionTarget.create
+        CreateCollection =
+          fun getModel dispatch items ->
+            match incrementalLoader with
+            | Static -> items |> ObservableCollection |> CollectionTarget.create
+            | Loadable (hasMoreItems, loadMoreItems) ->
+              IncrementalLoadingCollection (items, getModel >> hasMoreItems, loadMoreItems >> box >> dispatch) |> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId
         Update = update }
@@ -869,17 +901,23 @@ module BindingData =
         (d: SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection>) = {
       GetModels = d.GetModels >> Seq.map outMapBindingModel
       CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-      CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
+      CreateCollection = fun getModel dispatch items ->  d.CreateCollection getModel dispatch (items |> Seq.map inMapBindingViewModel) |> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
       UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (inMapBindingViewModel vm, inMapBindingModel m)
       ToMsg = fun m (idx, bMsg) -> d.ToMsg m (idx, (inMapBindingMsg bMsg))
     }
 
     let boxMinorTypes d = d |> mapMinorTypes box box box unbox unbox unbox
 
-    let create createViewModel updateViewModel =
+    let create createViewModel updateViewModel incrementalLoader =
       { GetModels = (fun x -> upcast x)
         CreateViewModel = createViewModel
-        CreateCollection = ObservableCollection >> CollectionTarget.create
+        CreateCollection =
+          fun getModel dispatch items ->
+            match incrementalLoader with
+            | Static -> items |> ObservableCollection |> CollectionTarget.create
+            | Loadable (hasMoreItems, loadMoreItems) ->
+              IncrementalLoadingCollection<'a> (items, getModel >> hasMoreItems, loadMoreItems >> box >> dispatch) |> CollectionTarget.create
+
         UpdateViewModel = updateViewModel
         ToMsg = Func2.id2 }
       |> boxMinorTypes
@@ -927,7 +965,7 @@ module BindingData =
           (d: SubModelSeqKeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection, 'id>) = {
         GetSubModels = d.GetSubModels >> Seq.map outMapBindingModel
         CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg) |> outMapBindingViewModel
-        CreateCollection = Seq.map inMapBindingViewModel >> d.CreateCollection >> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
+        CreateCollection = fun getModel dispatch items -> d.CreateCollection getModel dispatch (items |> Seq.map inMapBindingViewModel) |> CollectionTarget.mapA outMapBindingViewModel inMapBindingViewModel
         UpdateViewModel = fun (vm, m) -> (inMapBindingViewModel vm, inMapBindingModel m) |> d.UpdateViewModel
         ToMsg = fun m (id, bMsg) -> d.ToMsg m ((inMapId id), (inMapBindingMsg bMsg))
         BmToId = inMapBindingModel >> d.BmToId >> outMapId
@@ -936,10 +974,15 @@ module BindingData =
 
       let boxMinorTypes d = d |> mapMinorTypes box box box (fun id -> id :> obj) unbox unbox unbox unbox
 
-      let create createViewModel updateViewModel bmToId vmToId =
+      let create createViewModel updateViewModel bmToId vmToId incrementalLoader =
         { GetSubModels = (fun x -> upcast x)
           CreateViewModel = createViewModel
-          CreateCollection = ObservableCollection >> CollectionTarget.create
+          CreateCollection =
+            fun getModel dispatch items ->
+              match incrementalLoader with
+              | Static -> items |> ObservableCollection |> CollectionTarget.create
+              | Loadable (hasMoreItems, loadMoreItems) ->
+                IncrementalLoadingCollection<'a> (items, getModel >> hasMoreItems, loadMoreItems >> box >> dispatch) |> CollectionTarget.create
           UpdateViewModel = updateViewModel
           ToMsg = Func2.id2
           BmToId = bmToId
