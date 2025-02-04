@@ -45,6 +45,7 @@
   <ItemGroup Label="Uno">
     <PackageVersion Include="Uno.Extensions.Logging.WebAssembly.Console" Version="1.7.0" />
     <PackageVersion Include="Uno.Resizetizer" Version="$(UnoResizetizerVersion)" />
+    <PackageVersion Include="Uno.Toolkit.WinUI" Version="$(UnoToolkitVersion)" />
     <PackageVersion Include="Uno.UniversalImageLoader" Version="$(UnoUniversalImageLoaderVersion)" />
     <PackageVersion Include="Uno.WinUI.DevServer" Version="$(UnoVersion)" />
   </ItemGroup>
