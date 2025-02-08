@@ -5,8 +5,6 @@
 
 using CommunityToolkit.WinUI.Helpers;
 
-using Elmish.Uno.Samples;
-
 using Microsoft.UI.Xaml;
 
 using Windows.Devices.Sensors;
@@ -48,7 +46,7 @@ using Windows.Graphics.Display;
 /// </summary>
 public class OrientationStateTrigger : StateTriggerBase
 {
-    private readonly SimpleOrientationSensor simpleOrientationSensor = SimpleOrientationSensor.GetDefault();
+    private readonly SimpleOrientationSensor? simpleOrientationSensor = SimpleOrientationSensor.GetDefault();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OrientationStateTrigger"/> class.
@@ -95,7 +93,7 @@ public class OrientationStateTrigger : StateTriggerBase
         var obj = (OrientationStateTrigger)d;
         //if (!DesignModeHelpers.IsInDesignMode)
         //{
-        var orientation = ToDisplayOrientations(obj.simpleOrientationSensor.GetCurrentOrientation());
+        var orientation = ToDisplayOrientations(obj.simpleOrientationSensor?.GetCurrentOrientation() ?? SimpleOrientation.NotRotated);
         obj.UpdateTrigger(orientation);
         //}
     }

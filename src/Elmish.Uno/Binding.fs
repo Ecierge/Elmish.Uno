@@ -2184,6 +2184,16 @@ type Binding private () =
       getId
       (IViewModel.currentModel >> getId)
 
+  static member subModelSeq // TODO: make into function
+      (getBindings: unit -> Binding<'model, 'msg> list,
+       getId: 'model -> 'id)
+      : string -> Binding<'model seq, 'id * 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings()))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
