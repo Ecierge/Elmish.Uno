@@ -2306,16 +2306,6 @@ type Binding private () =
       (fun args -> DynamicViewModel<'model, 'msg>(args, bindings))
       IViewModel.updateModel
 
-  static member subModelSeq // TODO: make into function
-      (bindings: Binding<'model, 'msg> list,
-       getId: 'model -> 'id)
-      : string -> Binding<'model seq, 'id * 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model, 'msg>(args, bindings))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -2335,7 +2325,7 @@ type Binding private () =
   ///   sub-model ID and message type).
   /// </param>
   /// <param name="bindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
+  static member subModelWithModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        toBindingModel: 'model * 'subModel -> 'bindingModel,
        getId: 'bindingModel -> 'id,
@@ -2359,6 +2349,39 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  static member subModelWithModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       toMsg: 'id * 'bindingMsg -> 'msg,
+       bindings: Binding<'model * 'subModel, 'bindingMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'model * 'subModel, 'bindingMsg>(args, bindings))
+      IViewModel.updateModel
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
+    >> Binding.mapMsg toMsg
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="toMsg">
   ///   Converts the sub-model ID and messages used in the bindings to parent
@@ -2370,15 +2393,39 @@ type Binding private () =
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        toMsg: 'id * 'subMsg -> 'msg,
-       bindings: Binding<'model * 'subModel, 'subMsg> list)
+       bindings: Binding<'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindings))
+      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg toMsg
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  static member subModelWithModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id,
+       bindings: Binding<'model * 'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings))
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
-    >> Binding.mapMsg toMsg
+    >> Binding.mapMsg snd
 
 
   /// <summary>
@@ -2394,15 +2441,74 @@ type Binding private () =
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
-       bindings: Binding<'model * 'subModel, 'msg> list)
+       bindings: Binding<'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindings))
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
       IViewModel.updateModel
-      (snd >> getId)
-      (IViewModel.currentModel >> snd >> getId)
-    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
+      getId
+      (IViewModel.currentModel >> getId)
+    >> Binding.mapModel (fun m -> getSubModels m)
     >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getId: 'subModel -> 'id,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'id * 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, int * 'msg> =
+    Binding.SubModelSeqUnkeyed.create
+      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      IViewModel.updateModel
 
 
   /// <summary>

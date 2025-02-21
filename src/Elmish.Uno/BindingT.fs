@@ -1933,20 +1933,6 @@ type BindingT private () =
       ?onCloseRequested = onCloseRequested
     )
 
-  static member subModelSeq // TODO: make into function
-      (createVm)
-      : string -> Binding<'model seq, int * 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqUnkeyedT.create createVm
-
-  static member subModelSeq // TODO: make into function
-      (createVm,
-       getId: 'model -> 'id)
-      : string -> Binding<'model seq, 'id * 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqKeyedT.create
-      createVm
-      getId
-      (IViewModel.currentModel >> getId)
-
 
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
@@ -1966,7 +1952,7 @@ type BindingT private () =
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  static member subModelSeq
+  static member subModelWithModelSeq
       (createVm,
        getSubModels: 'model -> #seq<'subModel>,
        toBindingModel: 'model * 'subModel -> 'bindingModel,
@@ -2006,7 +1992,7 @@ type BindingT private () =
       createVm
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
-    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
 
@@ -2060,6 +2046,103 @@ type BindingT private () =
       (IViewModel.currentModel >> snd >> getId)
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>,
+       getId: 'subModel -> 'id)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.create
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqUnkeyedT.create createVm
+    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapMsg snd
+
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  static member subModelWithModelSeq
+      (createVm,
+       getId: 'subModel -> 'id)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.create
+      createVm
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
+    >> Binding.mapModel (fun m -> m |> Seq.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg snd
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+  ///   an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  static member subModelSeq
+      (createVm,
+       getId: 'subModel -> 'id)
+      : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.create
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by order number. The sub-models have their own bindings.
+  ///   You typically bind this to the <c>ItemsSource</c> of an
+  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  static member subModelSeq
+      createVm
+      : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqUnkeyedT.create createVm
+
 
   /// <summary>
   ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
