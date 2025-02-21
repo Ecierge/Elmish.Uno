@@ -227,7 +227,7 @@ module Bindings =
         "AddChild" |> Binding.cmd(AddChild |> LeafMsg)
         "GlobalState" |> Binding.oneWay(fun (m, _) -> m.SomeGlobalState)
         "ChildCounters"
-          |> Binding.subModelSeq (subtreeBindings (), (fun (_, { Self = c }) -> c.Data.Id))
+          |> Binding.subModelSeq ((fun (_, { Self = c }) -> c.Data.Id), subtreeBindings ())
           |> Binding.mapModel (fun (m, { Self = p }) -> p.Children |> Seq.map (fun c -> m, { Self = c; Parent = p }))
           |> Binding.mapMsg (fun (cId, inOutMsg) ->
             match inOutMsg with
@@ -246,7 +246,7 @@ module Bindings =
 
   let rootBindings : Binding<Model, Msg> list = [
     "Counters"
-      |> Binding.subModelSeq (subtreeBindings (), (fun (_, { Self = c }) -> c.Data.Id))
+      |> Binding.subModelSeq ((fun (_, { Self = c }) -> c.Data.Id), subtreeBindings ())
       |> Binding.mapModel (fun m -> m.DummyRoot.Children |> Seq.map (fun c -> m, { Self = c; Parent = m.DummyRoot }))
       |> Binding.mapMsg (fun (cId, inOutMsg) ->
         match inOutMsg with
