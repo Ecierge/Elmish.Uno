@@ -120,7 +120,7 @@ module Helpers =
       (toMsg: 'subMsg -> 'msg)
       (bindings: Binding<'subModel, 'subMsg> list)
       (sticky: bool) =
-    Binding.subModelOpt(getModel, snd, toMsg, bindings, sticky) name
+    Binding.subModelOptWithModel(getModel, snd, toMsg, bindings, sticky) name
 
 
   let internal subModelSeq
@@ -131,7 +131,7 @@ module Helpers =
       (bindings: Binding<'subModel, 'subMsg> list) =
     name
     |> Binding.subModelSeq (bindings = bindings, getId = getId)
-    |> Binding.mapModel (fun m -> upcast getModels m)
+    |> Binding.mapModel (fun m -> getModels m)
     |> Binding.mapMsg toMsg
 
 
