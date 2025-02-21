@@ -33,7 +33,7 @@ let bindings : Binding<Model, Msg> list = [
 
   "Deselect" |> Binding.cmd(Select None)
 
-  "Entities" |> Binding.subModelSeq(
+  "Entities" |> Binding.subModelSeqWithModel(
     (fun m -> m.Entities),
     (fun e -> e.Id),
     [

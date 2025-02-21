@@ -2577,7 +2577,7 @@ module subModelSeqKeyed =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeq(getSubModels, fail, []) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeqWithModel(getSubModels, fail, []) |> getSubModelSeqKeyedData
         test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
@@ -2610,7 +2610,7 @@ module subModelSeqKeyed =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeq(getSubModels, fail, fail, []) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeqWithModel(getSubModels, fail, fail, []) |> getSubModelSeqKeyedData
         test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
@@ -2633,7 +2633,7 @@ module subModelSeqKeyed =
       let ``sets the correct binding name`` () =
         Property.check <| property {
           let! bindingName = GenX.auto<string>
-          let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, fail, [])
+          let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, fail, fail, [])
           test <@ binding.Name = bindingName @>
         }
 
@@ -2644,7 +2644,7 @@ module subModelSeqKeyed =
           let! m = GenX.auto<string>
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
-          let d = Binding.subModelSeq(getSubModels, toBindingModel, fail, fail, []) |> getSubModelSeqKeyedData
+          let d = Binding.subModelSeqWithModel(getSubModels, toBindingModel, fail, fail, []) |> getSubModelSeqKeyedData
           test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s))) @>
         }
 
@@ -2656,7 +2656,7 @@ module subModelSeqKeyed =
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
           let getId i = i * 2
-          let d = Binding.subModelSeq(getSubModels, toBindingModel, getId, fail, []) |> getSubModelSeqKeyedData
+          let d = Binding.subModelSeqWithModel(getSubModels, toBindingModel, getId, fail, []) |> getSubModelSeqKeyedData
           test <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
         }
 
