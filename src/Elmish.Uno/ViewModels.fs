@@ -303,32 +303,32 @@ and GetCustomProperty(name: string) =
       match data.Values.GetCollection() with
       | :? System.Collections.IList ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IList>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | :? System.Collections.IEnumerable ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IEnumerable>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | c -> raise (NotSupportedException $"Type '{c.GetType().FullName}' is not a collection")
     | OneWaySeqGrouped data ->
       match data.Values.GetCollection() with
       | :? System.Collections.IList ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IList>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | :? System.Collections.IEnumerable ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IEnumerable>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | c -> raise (NotSupportedException $"Type '{c.GetType().FullName}' is not a collection")
     | TwoWaySeq data ->
       match data.Values.GetCollection() with
       | :? System.Collections.IList ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IList>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | :? System.Collections.IEnumerable ->
         DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IEnumerable>(name,
-          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+          fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
       | c -> raise (NotSupportedException $"Type '{c.GetType().FullName}' is not a collection")
     | Cmd _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Windows.Input.ICommand>(name,
-        fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+        fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
     | SubModel _
     | SubModelWin _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
@@ -336,7 +336,7 @@ and GetCustomProperty(name: string) =
     | SubModelSeqUnkeyed _
     | SubModelSeqKeyed _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IList>(name,
-        fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _) :> _
+        fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
     | SubModelSelectedItem _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
         fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
