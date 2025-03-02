@@ -1838,7 +1838,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) m = (p :?> string).Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let exec (p: objnull) m = (p |> nonNull :?> string).Length + m |> ValueSome |> ValueOption.filter (fun x -> x > 0)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.Exec (p :> objnull) m = exec p m @>
@@ -1851,7 +1851,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) m = (p :?> string).Length + m |> ValueSome
+        let exec (p: objnull) m = (p |> nonNull :?> string).Length + m |> ValueSome
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -1890,7 +1890,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) m = (p :?> string).Length + m |> Some |> Option.filter (fun x -> x > 0)
+        let exec (p: objnull) m = (p |> nonNull :?> string).Length + m |> Some |> Option.filter (fun x -> x > 0)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.Exec (p :> objnull) m = (exec p m |> ValueOption.ofOption) @>
@@ -1903,7 +1903,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) m = (p :?> string).Length + m |> Some
+        let exec (p: objnull) m = (p |> nonNull :?> string).Length + m |> Some
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -1943,7 +1943,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: objnull) m =
-          let x = (p :?> string).Length + m
+          let x = (p |> nonNull :?> string).Length + m
           if x > 0 then Ok x else Error (string x)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
@@ -1957,7 +1957,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) m = (p :?> string).Length + m |> Ok
+        let exec (p: objnull) m = (p |> nonNull :?> string).Length + m |> Ok
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -2036,7 +2036,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) = (p :?> string).Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
+        let exec (p: objnull) = (p |> nonNull :?> string).Length |> ValueSome |> ValueOption.filter (fun x -> x > 0)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.Exec (p :> objnull) m = exec p @>
@@ -2049,7 +2049,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) = (p :?> string).Length |> ValueSome
+        let exec (p: objnull) = (p |> nonNull :?> string).Length |> ValueSome
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -2090,7 +2090,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) = (p :?> string).Length |> Some |> Option.filter (fun x -> x > 0)
+        let exec (p: objnull) = (p |> nonNull :?> string).Length |> Some |> Option.filter (fun x -> x > 0)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.Exec (p :> objnull) m = (exec p |> ValueOption.ofOption) @>
@@ -2103,7 +2103,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) = (p :?> string).Length |> Some
+        let exec (p: objnull) = (p |> nonNull :?> string).Length |> Some
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -2143,7 +2143,7 @@ module cmdParamIf =
         let! p = GenX.auto<string>
 
         let exec (p: objnull) =
-          let x = (p :?> string).Length
+          let x = (p |> nonNull :?> string).Length
           if x > 0 then Ok x else Error (string x)
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
@@ -2157,7 +2157,7 @@ module cmdParamIf =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let exec (p: objnull) = (p :?> string).Length |> Ok
+        let exec (p: objnull) = (p |> nonNull :?> string).Length |> Ok
         let d = Binding.cmdParamIf(exec) |> getCmdData
 
         test <@ d.CanExec (p :> objnull) m = true @>
@@ -2551,7 +2551,7 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOptWithModel((fun _ -> Some 0), (fun _ -> Some 0), toMsg, []) |> getSubModelData
+        let d = Binding.subModelOptWithModel((fun _ -> Some 0), (fun _ _ -> Some 0), toMsg, []) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
       }

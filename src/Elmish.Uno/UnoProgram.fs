@@ -370,7 +370,9 @@ module UnoProgram =
      * 3. Show the window now that the DataContext is set.
      * 4. Run the current application, which must be last because it is blocking.
      *)
-    startElmishLoop (window.Content :?> FrameworkElement) program
+    match window.Content with
+    | :? FrameworkElement as frameworkElement -> startElmishLoop frameworkElement program
+    | _ -> raise (NotSupportedException "Window content must be a FrameworkElement")
     window.Activate()
 
   /// Same as mkProgram, except that init and update don't return Cmd<'msg>

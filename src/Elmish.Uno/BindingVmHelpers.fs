@@ -48,7 +48,9 @@ module Helpers2 =
      * invoking ShowDialog synchronously blocks the Elmish dispatch loop.
      *)
     win.DispatcherQueue.TryEnqueue(fun () ->
-      (win.Content :?> Microsoft.UI.Xaml.FrameworkElement).DataContext <- dataContext
+      match win.Content with
+      | :? Microsoft.UI.Xaml.FrameworkElement as frameworkElement -> frameworkElement.DataContext <- dataContext
+      | _ -> raise (NotSupportedException "Window content must be a FrameworkElement")
       win.Closed.Add(fun ev ->
         ev.Handled <- preventClose.Value
         getCurrentModel () |> onCloseRequested |> ValueOption.iter dispatch
@@ -425,14 +427,16 @@ type Initialize<'t>
           |> Some
       | TwoWaySeqData d ->
           let collectionTarget = d.CreateCollection (initialModel |> d.Get)
-          let collection = collectionTarget.GetCollection() |> box :?> INotifyCollectionChanged
           let bindingData =
             { TwoWaySeqData = d |> BindingData.TwoWaySeq.measureFunctions measure measure measure2
               Values = collectionTarget
               Update = fun args m -> d.Update args m |> dispatch
               SuspendUpdates = false }
-          let onCollectionChanged _ args : unit = bindingData.ExecuteUpdate args (getCurrentModel ())
-          collection.CollectionChanged.AddHandler (NotifyCollectionChangedEventHandler(onCollectionChanged))
+          match collectionTarget.GetCollection() :> objnull :?> INotifyCollectionChanged | null with
+          | null -> ()
+          | collection ->
+            let onCollectionChanged _ args : unit = bindingData.ExecuteUpdate args (getCurrentModel ())
+            collection.CollectionChanged.AddHandler (NotifyCollectionChangedEventHandler(onCollectionChanged))
           bindingData
           |> TwoWaySeq
           |> Some

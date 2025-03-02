@@ -258,7 +258,7 @@ let ``starting with two TestClass instances, when merging after removing the las
         |> Seq.head).OldItems
       with
       | null -> false
-      | oldItems -> (oldItems.[0] :?> TestClass).Id = tc2.Id
+      | oldItems -> (oldItems.[0] |> nonNull :?> TestClass).Id = tc2.Id
     @>
   }
 
