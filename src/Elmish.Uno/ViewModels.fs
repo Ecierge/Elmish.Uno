@@ -387,6 +387,7 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
               let binding = binding name
               let! vmBinding = binding |> initializeBinding helper.Bindings
               let newBindings = helper.Bindings.Add (name, vmBinding |> MapOutputType.boxVm)
+              let oldValidationErrors = helper.ValidationErrors
               let newValidationErrors =
                 FirstValidationErrors().Recursive(vmBinding)
                 |> ValueOption.map (fun errorList -> helper.ValidationErrors.Add (name, errorList))
@@ -401,6 +402,8 @@ type [<AllowNullLiteral>] ViewModelBase<'model, 'msg>(args: ViewModelArgs<'model
                 // We use hasErrors instead of hadErrors because
                 // we already raise the HasErrors property changed, so we don't need to raise it again
                 ViewModelHelper.raiseEvents hasErrors [PropertyChanged (nameof vm.HasErrors)] helper
+              if oldValidationErrors.TryFind name <> newValidationErrors.TryFind name then
+                ViewModelHelper.raiseEvents hasErrors [ErrorsChanged name] helper
               return vmBinding
           }
           return Get(nameChain).Recursive(helper.Model, vmBinding)
