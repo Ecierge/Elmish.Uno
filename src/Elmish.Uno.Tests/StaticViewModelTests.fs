@@ -81,7 +81,7 @@ type internal TestVm<'model, 'msg, 'B1>(model, binding: Binding<'model,'msg>) as
 
 module TestVm =
 
-    let GetPropertyName = TestVm<'model, 'msg, 'B1>.GetPropertyName
+    let GetPropertyName<'model, 'msg, 'B1> = TestVm<'model, 'msg, 'B1>.GetPropertyName
 
 [<AutoOpen>]
 module Helpers =
