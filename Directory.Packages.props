@@ -28,10 +28,11 @@
     <PackageVersion Include="CommunityToolkit.WinUI.Extensions" Version="$(CommunityToolkitVersion)" />
     <PackageVersion Include="CommunityToolkit.WinUI.Helpers" Version="$(CommunityToolkitVersion)" />
     <PackageVersion Include="CommunityToolkit.WinUI.Triggers" Version="$(CommunityToolkitVersion)" />
+    <PackageVersion Include="FSharp.Core" Version="9.0.201" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.5.240404000" />
