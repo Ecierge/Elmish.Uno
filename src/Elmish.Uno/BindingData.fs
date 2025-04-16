@@ -612,7 +612,7 @@ module BindingData =
 
     let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) (fun key -> key :> obj) unbox unbox
 
-    let createWithComparer itemEquals getId incrementalLoader getGrouppingKey keyComparer =
+    let createWithComparer itemEquals getId getGrouppingKey keyComparer =
       { Get = (fun x -> upcast x)
         CreateCollection =
           fun _ _ items -> items.ToObservableLookup<'key,_>(keyComparer, Func<_,'key>(getGrouppingKey)) |> GroupedCollectionTarget.create
@@ -624,12 +624,12 @@ module BindingData =
       |> OneWaySeqGroupedData
       |> BaseBindingData
 
-    let create itemEquals getId incrementalLoader getGrouppingKey (compareKeys : ('key -> 'key -> int) voption) =
+    let create itemEquals getId getGrouppingKey (compareKeys : ('key -> 'key -> int) voption) =
       let comparer =
         match compareKeys with
         | ValueNone -> Comparer<'key>.Default
         | ValueSome compareKeys -> Comparer.Create (Comparison compareKeys)
-      createWithComparer itemEquals getId incrementalLoader getGrouppingKey comparer
+      createWithComparer itemEquals getId getGrouppingKey comparer
 
     let private mapFunctions
         mGet

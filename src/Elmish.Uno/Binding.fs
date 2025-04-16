@@ -229,22 +229,7 @@ module Binding =
       (compareGrouppingKeys : ('groupingKey -> 'groupingKey -> int) voption)
       : string -> Binding<'a, 'msg, ObservableLookup<'groupingKey, 'item>>
       =
-      OneWaySeqGrouped.create itemEquals getId Static getGrouppingKey compareGrouppingKeys
-      |> BindingData.mapModel get
-      |> createBindingT
-
-    /// Elemental instance of a one-way-seq grouped binding.
-    let createGroupedIncrementalLoading<'model, 'item, 'id, 'groupingKey, 'msg when 'id : equality and 'id : not null and 'groupingKey : equality and 'groupingKey : not null>
-      (get : 'model -> 'item seq)
-      itemEquals
-      (getId : 'item -> 'id)
-      (getGrouppingKey : 'item -> 'groupingKey)
-      (compareGrouppingKeys : ('groupingKey -> 'groupingKey -> int) voption)
-      (hasMore : HasMoreItems<'model>)
-      (loadMore : LoadMoreItems<'msg>)
-      : string -> Binding<'model, 'msg, ObservableLookup<'groupingKey, 'item>>
-      =
-      OneWaySeqGrouped.create itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareGrouppingKeys
+      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareGrouppingKeys
       |> BindingData.mapModel get
       |> createBindingT
 
@@ -533,8 +518,8 @@ module Binding =
       |> createBinding
 
 
-    let internal createGrouped get itemEquals getId getGrouppingKey compareKeys incemementalLoader =
-      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareKeys incemementalLoader
+    let internal createGrouped get itemEquals getId getGrouppingKey compareKeys =
+      OneWaySeqGrouped.create itemEquals getId getGrouppingKey compareKeys
       |> BindingData.mapModel get
       |> createBinding
 
@@ -1116,48 +1101,7 @@ type Binding private () =
        [<Optional>] compareKeys: ('key -> 'key -> int) | null)
       : string -> Binding<'model, 'msg> =
     let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped map itemEquals getId Static getGrouppingKey compareKeys
-    >> Binding.addLazy equals
-    >> Binding.mapModel get
-
-  /// <summary>
-  ///   Creates a one-way binding to a sequence of items, each uniquely
-  ///   identified by the value returned by <paramref name="getId"/>. The
-  ///   binding will not be updated if the output of <paramref name="get"/>
-  ///   does not change, as determined by <paramref name="equals"/>.
-  ///   The binding is backed by a persistent <c>ObservableCollection</c>, so
-  ///   only changed items (as determined by <paramref name="itemEquals"/>)
-  ///   will be replaced. If the items are complex and you want them updated
-  ///   instead of replaced, consider using <see cref="subModelSeq"/>.
-  /// </summary>
-  /// <param name="get">Gets the intermediate value from the model.</param>
-  /// <param name="equals">
-  ///   Indicates whether two intermediate values are equal. Good candidates are
-  ///   <c>elmEq</c> and <c>refEq</c>.
-  /// </param>
-  /// <param name="map">Transforms the value into the final collection.</param>
-  /// <param name="itemEquals">
-  ///   Indicates whether two collection items are equal. Good candidates are
-  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
-  /// </param>
-  /// <param name="getId">Gets a unique identifier for a collection item.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getGrouppingKey">Gets a key used to group items.</param>
-  /// <param name="compareGrouppingKeys">Compares two groupping keys.</param>
-  static member oneWaySeqLazy
-      (get: 'model -> 'a,
-       equals: 'a -> 'a -> bool,
-       map: 'a -> #seq<'b>,
-       itemEquals: 'b -> 'b -> bool,
-       getId: 'b -> 'id,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       getGrouppingKey: 'b -> 'key,
-       [<Optional>] compareKeys: ('key -> 'key -> int) | null)
-      : string -> Binding<'model, 'msg> =
-    let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped map itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareKeys
+    Binding.OneWaySeq.createGrouped map itemEquals getId getGrouppingKey compareKeys
     >> Binding.addLazy equals
     >> Binding.mapModel get
 
@@ -1246,41 +1190,7 @@ type Binding private () =
        [<Optional>] compareKeys: ('key -> 'key -> int) | null)
       : string -> Binding<'model, 'msg> =
     let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped id itemEquals getId Static getGrouppingKey compareKeys
-    >> Binding.addLazy refEq
-    >> Binding.mapModel get
-
-  /// <summary>
-  ///   Creates a one-way binding to a sequence of items, each uniquely
-  ///   identified by the value returned by <paramref name="getId"/>. The
-  ///   binding will not be updated if the output of <paramref name="get"/>
-  ///   is referentially equal. This is the same as calling
-  ///   <see cref="oneWaySeqLazy"/> with <c>equals = refEq</c> and
-  ///   <c>map = id</c>. The binding is backed by a persistent
-  ///   <c>ObservableCollection</c>, so only changed items (as determined by
-  ///   <paramref name="itemEquals"/>) will be replaced. If the items are
-  ///   complex and you want them updated instead of replaced, consider using
-  ///   <see cref="subModelSeq"/>.
-  /// </summary>
-  /// <param name="get">Gets the collection from the model.</param>
-  /// <param name="itemEquals">
-  ///   Indicates whether two collection items are equal. Good candidates are
-  ///   <c>elmEq</c>, <c>refEq</c>, or simply <c>(=)</c>.
-  /// </param>
-  /// <param name="getId">Gets a unique identifier for a collection item.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  static member oneWaySeq
-      (get: 'model -> #seq<'a>,
-       itemEquals: 'a -> 'a -> bool,
-       getId: 'a -> 'id,
-       hasMore: seq<'a> -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       getGrouppingKey: 'a -> 'key,
-       [<Optional>] compareKeys: ('key -> 'key -> int) | null)
-      : string -> Binding<'model, 'msg> =
-    let compareKeys = compareKeys |> ValueOption.ofObj
-    Binding.OneWaySeq.createGrouped id itemEquals getId (Loadable (hasMore, loadMore)) getGrouppingKey compareKeys
+    Binding.OneWaySeq.createGrouped id itemEquals getId getGrouppingKey compareKeys
     >> Binding.addLazy refEq
     >> Binding.mapModel get
 
