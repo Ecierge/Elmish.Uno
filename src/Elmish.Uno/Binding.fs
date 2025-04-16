@@ -1917,6 +1917,7 @@ type Binding private () =
       (fun p m -> exec p m |> ValueOption.ofOk)
       (fun p m -> exec p m |> Result.isOk)
 
+
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type. You typically bind this to the <c>DataContext</c> of a
@@ -1931,7 +1932,7 @@ type Binding private () =
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
   /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        toBindingModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -1955,7 +1956,7 @@ type Binding private () =
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
   /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        toBindingModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -1963,6 +1964,54 @@ type Binding private () =
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.requiredLazy getBindings
     >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       toBindingModel: 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       bindings: Binding<'bindingModel, 'bindingMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> toBindingModel (getSubModel m))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       toBindingModel: 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       getBindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.requiredLazy getBindings
+    >> Binding.mapModel (fun m -> toBindingModel (getSubModel m))
     >> Binding.mapMsg toMsg
 
 
@@ -1977,7 +2026,7 @@ type Binding private () =
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
   /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        toMsg: 'subMsg -> 'msg,
        bindings: Binding<'model * 'subModel, 'subMsg> list)
@@ -1997,13 +2046,53 @@ type Binding private () =
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
   /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        toMsg: 'subMsg -> 'msg,
        getBindings: unit -> Binding<'model * 'subModel, 'subMsg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.requiredLazy getBindings
     >> Binding.mapModel (fun m -> (m, getSubModel m))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       toMsg: 'subMsg -> 'msg,
+       bindings: Binding<'subModel, 'subMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       toMsg: 'subMsg -> 'msg,
+       getBindings: unit -> Binding<'subModel, 'subMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.requiredLazy getBindings
+    >> Binding.mapModel (fun m -> getSubModel m)
     >> Binding.mapMsg toMsg
 
 
@@ -2014,7 +2103,7 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        bindings: Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
@@ -2028,12 +2117,40 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
   /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModel
+  static member subModelWithModel
       (getSubModel: 'model -> 'subModel,
        getBindings: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.requiredLazy getBindings
     >> Binding.mapModel (fun m -> (m, getSubModel m))
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings.
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings.
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.requiredLazy getBindings
+    >> Binding.mapModel (fun m -> getSubModel m)
 
 
   /// <summary>
