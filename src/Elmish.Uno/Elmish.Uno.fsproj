@@ -75,6 +75,7 @@
     <Compile Include="BindingT.fs" />
     <Compile Include="ViewModelModule.fs" />
     <Compile Include="UnoProgram.fs" />
+    <Compile Include="BindingBuilder.fs" />
   </ItemGroup>
 
   <ItemGroup>
