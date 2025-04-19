@@ -11,9 +11,9 @@ open Elmish
 #nowarn "1204" // The function is for use by compiled F# code and should not be used directly
 
 type UpdateData =
-  | ErrorsChanged of string
-  | PropertyChanged of string
-  | CanExecuteChanged of Command
+  | ErrorsChanged of Name : string
+  | PropertyChanged of Name : string
+  | CanExecuteChanged of Name : string * Command : Command
 
 module UpdateData =
   let isPropertyChanged = function PropertyChanged _ -> true | _ -> false
@@ -612,7 +612,7 @@ type Update<'t>
       | OneWaySeqGrouped b ->
           b.OneWaySeqGroupedData.Merge(b.Values, newModel)
           []
-      | Cmd cmd -> cmd |> CanExecuteChanged |> List.singleton
+      | Cmd cmd -> [ CanExecuteChanged (name, cmd) ]
       | SubModel b ->
         let d = b.SubModelData
         match b.GetVm (), d.GetModel newModel with

@@ -112,7 +112,8 @@ module internal ViewModelHelper =
     let raisePropertyChanged name =
       log.LogTrace("[{BindingNameChain}] PropertyChanged {BindingName}", nameChain, name)
       helper.PropertyChanged.Trigger(helper.GetSender (), PropertyChangedEventArgs name)
-    let raiseCanExecuteChanged (cmd: Command) =
+    let raiseCanExecuteChanged (name: string, cmd: Command) =
+      log.LogTrace("[{BindingNameChain}] command CanExecuteChanged {BindingName}", nameChain, name)
       cmd.RaiseCanExecuteChanged ()
     let raiseErrorsChanged name =
       log.LogTrace("[{BindingNameChain}] ErrorsChanged {BindingName}", nameChain, name)
@@ -122,7 +123,7 @@ module internal ViewModelHelper =
     |> List.iter (function
       | ErrorsChanged name -> raiseErrorsChanged name
       | PropertyChanged name -> raisePropertyChanged name
-      | CanExecuteChanged cmd -> cmd |> raiseCanExecuteChanged)
+      | CanExecuteChanged (name, cmd) -> raiseCanExecuteChanged (name, cmd))
 
     if hadErrors <> helper.HasErrors then
       raisePropertyChanged (nameof helper.HasErrors)
