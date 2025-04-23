@@ -2053,6 +2053,62 @@ type Binding private () =
 
 
   /// <summary>
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings.
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.requiredLazy getBindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+
+  /// <summary>
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       bindings: Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.required bindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings.
+  ///   You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModel
+      (getSubModel: 'model -> 'subModel,
+       getBindings: unit -> Binding<'subModel, 'msg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.requiredLazy getBindings
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+
+  /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
   ///   model will return <c>null</c> unless <paramref name="sticky" /> is
