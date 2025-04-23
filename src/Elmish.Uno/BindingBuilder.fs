@@ -3,7 +3,7 @@
 open System.Reflection
 open Microsoft.FSharp.Core
 
-type BindingBuilder<'model, 'msg> () =
+type BindingBuilder<'model, 'msg when 'model : not null and 'msg : not null> () =
 
   static let bindingType = typeof<Binding<'model, 'msg>>
   static let bindingCreatorType = typeof<string -> Binding<'model, 'msg>>

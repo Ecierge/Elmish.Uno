@@ -236,7 +236,7 @@ module internal MapOutputType =
         OneWaySeqGroupedData = {
           Get = b.OneWaySeqGroupedData.Get
           GetKey = b.OneWaySeqGroupedData.GetKey
-          CreateCollection = mapCreateCollection b.OneWaySeqGroupedData.CreateCollection (GroupedCollectionTarget.mapCollection fOut)
+          CreateCollection = mapCreateCollectionGrouped b.OneWaySeqGroupedData.CreateCollection (GroupedCollectionTarget.mapCollection fOut)
           GetId = b.OneWaySeqGroupedData.GetId
           KeyComparer = b.OneWaySeqGroupedData.KeyComparer
           ItemEquals = b.OneWaySeqGroupedData.ItemEquals }
@@ -338,7 +338,7 @@ type SubModelSelectedItemLast() =
     | SubModelSelectedItemData _ -> 1
     | _ -> 0
 
-  member this.Recursive<'model, 'msg>(data: BindingData<'model, 'msg, objnull>) : int =
+  member this.Recursive<'model, 'msg when 'model : not null and 'msg : not null>(data: BindingData<'model, 'msg, objnull>) : int =
     match data with
     | BaseBindingData d -> this.Base d
     | CachingData d -> this.Recursive d
@@ -398,9 +398,10 @@ type Initialize<'t>
   let measure x = x |> Helpers2.measure logPerformance LogLevel.Trace performanceLogThresholdMs name nameChain
   let measure2 x = x |> Helpers2.measure2 logPerformance LogLevel.Trace performanceLogThresholdMs name nameChain
 
-  member _.Base<'model, 'msg>
+  member _.Base<'model, 'msg when 'msg : not null>
       (initialModel: 'model,
        dispatch: Dispatch<'msg>,
+       getRootModel: unit -> obj,
        getCurrentModel: unit -> 'model,
        binding: BaseBindingData<'model, 'msg, 't>)
       : BaseVmBinding<'model, 'msg, 't> option =
@@ -411,12 +412,12 @@ type Initialize<'t>
           |> Some
       | OneWaySeqData d ->
           { OneWaySeqData = d |> BindingData.OneWaySeq.measureFunctions measure measure measure2
-            Values = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get) }
+            Values = d.CreateCollection getRootModel (unbox >> dispatch) (initialModel |> d.Get) }
           |> OneWaySeq
           |> Some
       | OneWaySeqGroupedData d ->
           { OneWaySeqGroupedData = d |> BindingData.OneWaySeqGrouped.measureFunctions measure measure measure2
-            Values = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get) }
+            Values = d.CreateCollection (unbox >> dispatch) (initialModel |> d.Get) }
           |> OneWaySeqGrouped
           |> Some
       | TwoWayData d ->
@@ -426,7 +427,7 @@ type Initialize<'t>
           |> TwoWay
           |> Some
       | TwoWaySeqData d ->
-          let collectionTarget = d.CreateCollection getCurrentModel (unbox >> dispatch) (initialModel |> d.Get)
+          let collectionTarget = d.CreateCollection getRootModel (unbox >> dispatch) (initialModel |> d.Get)
           let bindingData =
             { TwoWaySeqData = d |> BindingData.TwoWaySeq.measureFunctions measure measure measure2
               Values = collectionTarget
@@ -507,7 +508,7 @@ type Initialize<'t>
                    let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (idx |> string)
                    let args = ViewModelArgs.create m (fun msg -> toMsg (idx, msg) |> dispatch) chain loggingArgs
                    d.CreateViewModel args)
-            d.CreateCollection getCurrentModel (unbox >> dispatch) items
+            d.CreateCollection getRootModel (unbox >> dispatch) items
           { SubModelSeqUnkeyedData = d
             Dispatch = dispatch
             Vms = vms
@@ -526,7 +527,7 @@ type Initialize<'t>
                    let chain = LoggingViewModelArgs.getNameChainForItem nameChain name (mId |> string)
                    let args = ViewModelArgs.create m (fun msg -> toMsg (mId, msg) |> dispatch) chain loggingArgs
                    d.CreateViewModel args)
-            d.CreateCollection getCurrentModel (unbox >> dispatch) items
+            d.CreateCollection getRootModel (unbox >> dispatch) items
           { SubModelSeqKeyedData = d
             Dispatch = dispatch
             Vms = vms
@@ -546,39 +547,40 @@ type Initialize<'t>
               |> SubModelSelectedItem)
           |> ValueOption.toOption
 
-  member this.Recursive<'model, 'msg>
+  member this.Recursive<'model, 'msg when 'msg : not null>
       (initialModel: 'model,
        dispatch: 'msg -> unit,
+       getRootModel: unit -> obj,
        getCurrentModel: unit -> 'model,
        binding: BindingData<'model, 'msg, 't>)
       : VmBinding<'model, 'msg, 't> voption =
     voption {
       match binding with
       | BaseBindingData d ->
-          let! b = this.Base(initialModel, dispatch, getCurrentModel, d)
+          let! b = this.Base(initialModel, dispatch, getRootModel, getCurrentModel, d)
           return BaseVmBinding b
       | CachingData d ->
-          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d)
+          let! b = this.Recursive(initialModel, dispatch, getRootModel, getCurrentModel, d)
           return b.AddCaching
       | ValidationData d ->
           let d = d |> BindingData.Validation.measureFunctions measure
-          let! b = this.Recursive(initialModel, dispatch, getCurrentModel, d.BindingData)
+          let! b = this.Recursive(initialModel, dispatch, getRootModel, getCurrentModel, d.BindingData)
           return b.AddValidation initialModel d.Validate
       | LazyData d ->
-          let initialModel' : objnull = d.Get initialModel
-          let getCurrentModel' : unit -> objnull = getCurrentModel >> d.Get
-          let dispatch' : objnull -> unit = d.MapDispatch(getCurrentModel, dispatch)
+          let initialModel' = d.Get initialModel
+          let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
+          let dispatch' : obj -> unit = d.MapDispatch(getCurrentModel, dispatch)
           let d = d |> BindingData.Lazy.measureFunctions measure measure2 measure2
-          let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
+          let! b = this.Recursive(initialModel', dispatch', getRootModel, getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
                    Equals = d.Equals
                  } |> Lazy
       | AlterMsgStreamData d ->
-          let initialModel' : objnull = d.Get initialModel
-          let getCurrentModel' : unit -> objnull = getCurrentModel >> d.Get
-          let dispatch' : objnull -> unit = d.MapDispatch(getCurrentModel, dispatch)
-          let! b = this.Recursive(initialModel', dispatch', getCurrentModel', d.BindingData)
+          let initialModel' : obj = d.Get initialModel
+          let getCurrentModel' : unit -> obj = getCurrentModel >> d.Get
+          let dispatch' : obj -> unit = d.MapDispatch(getCurrentModel, dispatch)
+          let! b = this.Recursive(initialModel', dispatch', getRootModel, getCurrentModel', d.BindingData)
           return { Binding = b
                    Get = d.Get
                  } |> AlterMsgStream

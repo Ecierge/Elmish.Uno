@@ -40,11 +40,11 @@ type GroupedCollectionTarget<'T, 'Collection, 'Key when 'Key : not null> =
     Clear: unit -> unit
     GetCollection: unit -> 'Collection }
 
-let internal mapCreateCollection createCollection mapCollectionTarget getModel dispatch model =
-  createCollection getModel dispatch model |> mapCollectionTarget
+let internal mapCreateCollection createCollection mapCollectionTarget dispatch getRootModel model =
+  createCollection dispatch getRootModel model |> mapCollectionTarget
 
-let internal mapCollectionModel createCollection mapModel getModel dispatch model =
-  createCollection (getModel >> mapModel) dispatch model
+let internal mapCreateCollectionGrouped createCollection mapCollectionTarget dispatch model =
+  createCollection dispatch model |> mapCollectionTarget
 
 module CollectionTarget =
 

@@ -311,7 +311,7 @@ type BindingT private () =
        map: 'a -> seq<'b>,
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id,
-       hasMore: seq<'b> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
     Binding.OneWaySeqT.createIncrementalLoading map itemEquals getId hasMore loadMore
@@ -407,7 +407,7 @@ type BindingT private () =
       (get: 'model -> seq<'a>,
        itemEquals: 'a -> 'a -> bool,
        getId: 'a -> 'id,
-       hasMore: seq<'a> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
     Binding.OneWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore
@@ -1013,7 +1013,7 @@ type BindingT private () =
       (get: 'model -> seq<'T>,
        itemEquals: 'T -> 'T -> bool,
        getId: 'T -> 'id,
-       hasMore: seq<'T> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
        update: NotifyCollectionChangedEventArgs -> seq<'T> -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
@@ -1076,7 +1076,7 @@ type BindingT private () =
       (get: 'model -> seq<'T>,
        itemEquals: 'T -> 'T -> bool,
        getId: 'T -> 'id,
-       hasMore: seq<'T> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
@@ -1150,7 +1150,7 @@ type BindingT private () =
        map: 'T -> seq<'b>,
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id,
-       hasMore: seq<'b> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
        update: NotifyCollectionChangedEventArgs -> seq<'b> -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
@@ -1223,7 +1223,7 @@ type BindingT private () =
        map: 'T -> seq<'b>,
        itemEquals: 'b -> 'b -> bool,
        getId: 'b -> 'id,
-       hasMore: seq<'b> -> bool,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'b>> =
@@ -1448,33 +1448,12 @@ type BindingT private () =
   static member subModel
       (createVm,
        getSubModel: 'model -> 'subModel,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.req createVm
-    >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
+    >> Binding.mapModel (fun m -> toBindingModelWithModel (m, getSubModel m))
     >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  static member subModelWithModel
-      (createVm,
-       getSubModel: 'model -> 'subModel,
-       toMsg: 'subMsg -> 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.req createVm
-    >> Binding.mapModel (fun m -> (m, getSubModel m))
-    >> Binding.mapMsg toMsg
-
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1493,24 +1472,8 @@ type BindingT private () =
        toMsg: 'subMsg -> 'msg)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.req createVm
-    >> Binding.mapModel getSubModel
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings.
-  ///   You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  static member subModelWithModel
-      (createVm,
-       getSubModel: 'model -> 'subModel)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.req createVm
     >> Binding.mapModel (fun m -> (m, getSubModel m))
-
+    >> Binding.mapMsg toMsg
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings.
@@ -1524,7 +1487,7 @@ type BindingT private () =
        getSubModel: 'model -> 'subModel)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.req createVm
-    >> Binding.mapModel getSubModel
+    >> Binding.mapModel (fun m -> (m, getSubModel m))
 
 
   /// <summary>
@@ -1557,13 +1520,13 @@ type BindingT private () =
   static member subModelOptWithModel
       (createVm,
        getSubModel: 'model -> 'subModel voption,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
        ?sticky: bool)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.vopt createVm
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
 
@@ -1597,13 +1560,13 @@ type BindingT private () =
   static member subModelOptWithModel
       (createVm,
        getSubModel: 'model -> 'subModel option,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
        ?sticky: bool)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.opt createVm
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModel (m, sub)))
+    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
   /// <summary>
@@ -1910,13 +1873,13 @@ type BindingT private () =
   static member subModelWin
       (createVm,
        getState: 'model -> WindowState<'subModel>,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
        getWindow: 'model -> Dispatch<'msg> -> Window,
        ?onCloseRequested: 'msg)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelWinT.create
-      (fun m -> getState m |> WindowState.map (fun sub -> toBindingModel (m, sub)))
+      (fun m -> getState m |> WindowState.map (fun sub -> toBindingModelWithModel (m, sub)))
       createVm
       (fun _ -> toMsg)
       (fun m d -> getWindow m d)
@@ -1963,7 +1926,7 @@ type BindingT private () =
   static member subModelWin
       (createVm,
        getState: 'model -> WindowState<'subModel>,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
        getWindow: unit -> Window,
        ?onCloseRequested: 'msg)
@@ -1971,7 +1934,7 @@ type BindingT private () =
     BindingT.subModelWin(
       createVm,
       getState,
-      toBindingModel,
+      toBindingModelWithModel,
       toMsg,
       (fun _ _ -> getWindow ()),
       ?onCloseRequested = onCloseRequested
@@ -2169,7 +2132,7 @@ type BindingT private () =
   static member subModelSeqWithModel
       (createVm,
        getSubModels: 'model -> #seq<'subModel>,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        getId: 'bindingModel -> 'id,
        toMsg: 'id * 'bindingMsg -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
@@ -2177,7 +2140,7 @@ type BindingT private () =
       createVm
       getId
       (IViewModel.currentModel >> getId)
-    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModel (m, sub)))
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
 
@@ -3157,6 +3120,66 @@ module ExtensionsT =
       Binding.CmdParamT.model
         (fun p _ -> canExec p)
         (fun p _ -> exec p |> ValueSome)
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toBindingModel">
+    ///   Converts the models to the model used by the bindings.
+    /// </param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    static member subModel
+        (createVm,
+         getSubModel: 'model -> 'subModel,
+         toBindingModel: 'subModel -> 'bindingModel,
+         toMsg: 'bindingMsg -> 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.req createVm
+      >> Binding.mapModel (fun m -> toBindingModel (getSubModel m))
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    static member subModel
+        (createVm,
+         getSubModel: 'model -> 'subModel,
+         toMsg: 'subMsg -> 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.req createVm
+      >> Binding.mapModel getSubModel
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings.
+    ///   You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    static member subModel
+        (createVm,
+         getSubModel: 'model -> 'subModel)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.req createVm
+      >> Binding.mapModel getSubModel
+
 
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where

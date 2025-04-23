@@ -361,10 +361,10 @@ module twoWayOpt =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
+        let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
-        test <@ d.Set (p :> objnull) m |> unbox = set (Some p) m @>
+        test <@ d.Set (p :> objnull) m |> unbox = set (ValueSome p) m @>
       }
 
 
@@ -373,10 +373,10 @@ module twoWayOpt =
       Property.check <| property {
         let! m = GenX.auto<int>
 
-        let set (p: string option) (m: int) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
+        let set (p: string voption) (m: int) = p |> ValueOption.map ((+) (string m))
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
-        test <@ d.Set Unchecked.defaultof<_> m |> unbox = set None m @>
+        test <@ d.Set Unchecked.defaultof<_> m |> unbox = set ValueNone m @>
       }
 
 
@@ -467,10 +467,10 @@ module twoWayOpt =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string>
 
-        let set (p: string option) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
+        let set (p: string voption) = p |> ValueOption.map ((+) (string m))
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
-        test <@ d.Set (p :> objnull) m |> unbox = set (Some p) @>
+        test <@ d.Set (p :> objnull) m |> unbox = set (ValueSome p) @>
       }
 
 
@@ -479,10 +479,10 @@ module twoWayOpt =
       Property.check <| property {
         let! m = GenX.auto<int>
 
-        let set (p: string option) = p |> Option.map ((+) (string m))
-        let d = Binding.twoWayOpt((fun _ -> Some ""), set) |> getTwoWayData
+        let set (p: string voption) = p |> ValueOption.map ((+) (string m))
+        let d = Binding.twoWayOpt((fun _ -> ValueSome ""), set) |> getTwoWayData
 
-        test <@ d.Set Unchecked.defaultof<_> m |> unbox = set None @>
+        test <@ d.Set Unchecked.defaultof<_> m |> unbox = set ValueNone @>
       }
 
 
@@ -2200,7 +2200,7 @@ module subModel =
         let! x = GenX.auto<int>
         let getSubModel = string<int>
         let d = Binding.subModel(getSubModel, []) |> getSubModelData
-        test <@ d.GetModel x = ((x, getSubModel x) |> box |> nonNull |> ValueSome) @>
+        test <@ d.GetModel x = ((x, getSubModel x) |> box |> ValueSome) @>
       }
 
 
@@ -2231,7 +2231,7 @@ module subModel =
         let! x = GenX.auto<int>
         let getSubModel = string<int>
         let d = Binding.subModel(getSubModel, fail, []) |> getSubModelData
-        test <@ d.GetModel x = ((x, getSubModel x) |> box |> nonNull |> ValueSome) @>
+        test <@ d.GetModel x = ((x, getSubModel x) |> box |> ValueSome) @>
       }
 
 
@@ -2747,7 +2747,7 @@ module subModelSelectedItem =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string option>
         let get _ = None
-        let set (p: string option) m = p |> Option.map (fun p -> p.Length + m |> string)
+        let set (p: string option) m = p |> ValueOption.ofOption |> ValueOption.map (fun p -> p.Length + m |> string)
         let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> ValueOption.ofOption |> ValueOption.map (box >> nonNull)) m = set p m @>
       }
@@ -2835,7 +2835,7 @@ module subModelSelectedItem =
         let! m = GenX.auto<int>
         let! p = GenX.auto<string option>
         let get _ = None
-        let set (p: string option) = p |> Option.map (fun p -> p.Length |> string)
+        let set (p: string option) = p  |> ValueOption.ofOption |> ValueOption.map (fun p -> p.Length |> string)
         let d = Binding.subModelSelectedItem("", get, set) |> getSubModelSelectedItemData
         test <@ d.Set (p |> ValueOption.ofOption |> ValueOption.map (box >> nonNull)) m = set p @>
       }

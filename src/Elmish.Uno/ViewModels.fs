@@ -18,12 +18,12 @@ type private INotifyDataErrorInfo = System.ComponentModel.INotifyDataErrorInfo
 type private DataErrorsChangedEventArgs = System.ComponentModel.DataErrorsChangedEventArgs
 
 /// Represents all necessary data used to create a binding.
-type Binding<'model, 'msg, 't> =
+type Binding<'model, 'msg, 't when 'msg : not null> =
   internal
     { Name: string
       Data: BindingData<'model, 'msg, 't> }
 
-type Binding<'model, 'msg> = Binding<'model, 'msg, objnull>
+type Binding<'model, 'msg when 'msg : not null> = Binding<'model, 'msg, objnull>
 
 
 [<AutoOpen>]
@@ -159,7 +159,7 @@ type DynamicViewModel<'model, 'msg when 'model : not null and 'msg : not null>
   let (bindings, validationErrors) =
     let initializeBinding initializedBindings binding =
       Initialize(loggingArgs, binding.Name, ViewModelHelper.getFunctionsForSubModelSelectedItem loggingArgs initializedBindings)
-        .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
+        .Recursive(initialModel, dispatch, (fun () -> this |> IViewModel.currentModel :> obj), (fun () -> this |> IViewModel.currentModel), binding.Data)
 
     log.LogTrace("[{BindingNameChain}] Initializing bindings", nameChain)
 
@@ -370,12 +370,12 @@ type ViewModelBase<'model, 'msg when 'model : not null and 'msg : not null>(args
 
   let initializeBinding initializedBindings binding =
     Initialize(loggingArgs, binding.Name, ViewModelHelper.getFunctionsForSubModelSelectedItem loggingArgs initializedBindings)
-      .Recursive((this |> IViewModel.currentModel), dispatch, (fun () -> this |> IViewModel.currentModel), binding.Data)
+      .Recursive((this |> IViewModel.currentModel), dispatch, (fun () -> this |> IViewModel.currentModel :> obj), (fun () -> this |> IViewModel.currentModel), binding.Data)
 
   member _.NotifyPropertyChanged (name: string) =
     helper.PropertyChanged.Trigger(helper.GetSender (), PropertyChangedEventArgs name)
 
-  member vm.Get<'T> ([<Optional; CallerMemberName>] memberName: string) =
+  member vm.Get<'T> ([<Optional; CallerMemberName>] memberName: string | null) =
     fun (binding: string -> Binding<'model, 'msg, 'T>) ->
       let result =
         voption {
@@ -424,7 +424,7 @@ type ViewModelBase<'model, 'msg when 'model : not null and 'msg : not null>(args
   member vm.Get<'T> (binding: Binding<'model, 'msg, 'T>) =
     vm.Get<'T>(binding.Name) (fun _ -> binding)
 
-  member _.Set<'T> (value: 'T, [<Optional; CallerMemberName>] memberName: string) =
+  member _.Set<'T> (value: 'T, [<Optional; CallerMemberName>] memberName: string | null) =
     fun (binding: string -> Binding<'model, 'msg, 'T>) ->
       try
         let success =
