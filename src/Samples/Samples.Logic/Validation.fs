@@ -12,7 +12,8 @@ module Result =
 
   module Error =
 
-    let toList = function
+    let toList list =
+      match list with
       | Ok _ -> []
       | Error e -> [ e ]
 

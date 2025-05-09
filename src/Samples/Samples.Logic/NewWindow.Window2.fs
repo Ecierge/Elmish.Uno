@@ -41,7 +41,8 @@ module Window2 =
       IsChecked = false
       ConfirmState = None }
 
-  let update = function
+  let update msg =
+    match msg with
     | SetInput s -> s |> Input.set
     | SetChecked b -> b |> IsChecked.set
     | Submit -> ConfirmState.Submit |> Some |> ConfirmState.set

@@ -31,7 +31,8 @@ module App =
     let get m = m.Window2
     let set v m = { m with Window2 = v }
     let map = map get set
-    let mapOutMsg = function
+    let mapOutMsg msg =
+      match msg with
       | Window2OutMsg.Close -> Window2Close
     let mapInOutMsg = InOut.cata Window2Msg mapOutMsg
 
@@ -39,7 +40,8 @@ module App =
     { Window1 = WindowState.Closed
       Window2 = None }
 
-  let update = function
+  let update msg =
+    match msg with
     | Window1Show -> "" |> WindowState.toVisible |> Window1.map
     | Window1Close -> WindowState.Closed |> Window1.set
     | Window1SetInput s -> s |> WindowState.set |> Window1.map
