@@ -1,0 +1,64 @@
+﻿<ContentDialog
+  x:Class="Elmish.Uno.Samples.NewDialog.Dialog2"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:samples="using:Elmish.Uno.Samples"
+  mc:Ignorable="d"
+  Title="TITLE"
+  Style="{ThemeResource DefaultContentDialogStyle}"
+  PrimaryButtonText="Submit"
+  SecondaryButtonText="Cancel"
+  CloseButtonText="Close"
+  PrimaryButtonCommand="{Binding Submit}"
+  SecondaryButtonCommand="{Binding Cancel}"
+  CloseButtonCommand="{Binding Close}"
+  PrimaryButtonStyle="{StaticResource AccentButtonStyle}">
+  
+  <Grid d:DataContext="{d:DesignInstance Type=samples:DesignData, IsDesignTimeCreatable=True}">
+    <StackPanel d:DataContext="{Binding NewDialog2}" VerticalAlignment="Center">
+      <TextBlock TextWrapping="Wrap">
+        This Dialog is shown modally and blocks the main Dialog until it's closed.
+      </TextBlock>
+      <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
+        Furthermore, it shows how submit/cancel/close just uses normal messages
+        and how user code can fully control the closing behaviour, for example to
+        show a message to the user (you could, for example, display form
+        validation errors when submit is clicked.)
+      </TextBlock>
+      <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
+        The Dialog can be closed in three ways:
+      </TextBlock>
+      <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
+        – Clicking Submit (or Enter, since the button has IsDefault=true)
+      </TextBlock>
+      <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
+        – Clicking Cancel (or Esc, since the button has IsCancel=true)
+      </TextBlock>
+      <TextBlock Margin="15,0,0,0" TextWrapping="Wrap">
+        – Externally: Close (X) button, Alt+F4, or System Menu -&gt; Close
+      </TextBlock>
+      <TextBlock Margin="0,5,0,0" TextWrapping="Wrap">
+        Note the interplay between the visible/closed state of this Dialog and the
+        main Dialog's binding to the state controlled by the inputs below. The
+        input state in the model is None when the Dialog is closed, so it's reset
+        each time the Dialog is shown.
+      </TextBlock>
+      <TextBlock Margin="0,10,0,0" Text="Input" />
+      <TextBox Margin="0,5,0,5" Text="{Binding Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBlock Text="Checkbox:" />
+      <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+      <TextBlock Foreground="Red" Visibility="{Binding SubmitMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+        Submit clicked, repeat to submit
+      </TextBlock>
+      <TextBlock Foreground="Red" Visibility="{Binding CancelMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+        Cancel clicked, repeat to cancel
+      </TextBlock>
+      <TextBlock
+        Visibility="{Binding CloseMsgVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+        Foreground="Red"
+        Text="External close requested, repeat to close" />
+    </StackPanel>
+  </Grid>
+</ContentDialog>

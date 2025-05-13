@@ -334,6 +334,9 @@ and GetCustomProperty(name: string) =
     | SubModelWin _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
         fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
+    | SubModelDialog _ ->
+      DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
+        fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
     | SubModelSeqUnkeyed _
     | SubModelSeqKeyed _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Collections.IList>(name,

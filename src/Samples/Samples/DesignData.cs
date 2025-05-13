@@ -15,6 +15,9 @@ using FileDialogsProgram = Elmish.Uno.Samples.FileDialogs.Program;
 using NewWindow1Program = Elmish.Uno.Samples.NewWindow.Window1Module;
 using NewWindow2Program = Elmish.Uno.Samples.NewWindow.Window2Module;
 using NewWindowProgram = Elmish.Uno.Samples.NewWindow.AppModule;
+using NewDialog1Program = Elmish.Uno.Samples.NewDialog.Dialog1Module;
+using NewDialog2Program = Elmish.Uno.Samples.NewDialog.Dialog2Module;
+using NewDialogProgram = Elmish.Uno.Samples.NewDialog.AppModule;
 using OneWaySeqProgram = Elmish.Uno.Samples.OneWaySeq.Program;
 using OneWaySeqGroupedProgram = Elmish.Uno.Samples.OneWaySeqGrouped.Program;
 using TwoWaySeqProgram = Elmish.Uno.Samples.TwoWaySeq.Program;
@@ -54,4 +57,7 @@ internal class DesignData
     public object NewWindow => NewWindowProgram.DesignInstance;
     public object NewWindow1 => NewWindow1Program.DesignInstance;
     public object NewWindow2 => NewWindow2Program.DesignInstance;
+    public object NewDialog => NewDialogProgram.DesignInstance;
+    public object NewDialog1 => NewDialog1Program.DesignInstance;
+    public object NewDialog2 => NewDialog2Program.DesignInstance;
 }

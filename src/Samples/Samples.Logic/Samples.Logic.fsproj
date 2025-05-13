@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="NewDialog.AutoOpenDialog.fs" />
+    <Compile Include="NewDialog.Dialog2.fs" />
+    <Compile Include="NewDialog.Dialog1.fs" />
+    <Compile Include="NewDialog.fs" />
     <Compile Include="Logging.fs" />
     <Compile Include="SingleCounter.fs" />
     <Compile Include="OneWaySeq.fs" />
