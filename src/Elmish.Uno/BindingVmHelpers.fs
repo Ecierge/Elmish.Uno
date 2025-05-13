@@ -68,8 +68,6 @@ module Helpers2 =
       (getCurrentModel: unit -> 'model)
       (dispatch: 'msg -> unit) =
     let dlg = getDialog (getCurrentModel ()) dispatch
-    //if isNull dlg.CloseButtonCommand then
-    //  preventClose.Value <- false
     dlgRef.SetTarget dlg
     (*
      * A different thread might own this Dialog, so must use its DispatcherQueue.
