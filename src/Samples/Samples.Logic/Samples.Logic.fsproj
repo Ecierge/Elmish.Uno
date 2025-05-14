@@ -11,10 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="NewDialog.AutoOpenDialog.fs" />
-    <Compile Include="NewDialog.Dialog2.fs" />
-    <Compile Include="NewDialog.Dialog1.fs" />
-    <Compile Include="NewDialog.fs" />
     <Compile Include="Logging.fs" />
     <Compile Include="SingleCounter.fs" />
     <Compile Include="OneWaySeq.fs" />
@@ -30,6 +26,10 @@
     <Compile Include="FileDialogs.fs" />
     <Compile Include="FileDialogs.CmdMsg.fs" />
     <Compile Include="EventBindingsAndBehaviors.fs" />
+    <Compile Include="NewDialog.AutoOpenDialog.fs" />
+    <Compile Include="NewDialog.Dialog2.fs" />
+    <Compile Include="NewDialog.Dialog1.fs" />
+    <Compile Include="NewDialog.fs" />
     <Compile Include="NewWindow.AutoOpen.fs" DependentUpon="NewWindow.fs" />
     <Compile Include="NewWindow.Window1.fs" DependentUpon="NewWindow.fs" />
     <Compile Include="NewWindow.Window2.fs" DependentUpon="NewWindow.fs" />

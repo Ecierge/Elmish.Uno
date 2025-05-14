@@ -23,11 +23,6 @@
     -->
     <!-- <WindowsSdkPackageVersion>10.0.26100.48</WindowsSdkPackageVersion> -->
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove="NewDialogPage.xaml" />
-    <None Remove="NewDialog\Dialog1.xaml" />
-    <None Remove="NewDialog\Dialog2.xaml" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Behaviors" />
@@ -40,24 +35,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Elmish.Uno\Elmish.Uno.fsproj" />
     <ProjectReference Include="..\Samples.Logic\Samples.Logic.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Page Update="NewDialog\Dialog2.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Page Update="NewDialogPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Page Update="NewDialog\Dialog1.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
 
 </Project>

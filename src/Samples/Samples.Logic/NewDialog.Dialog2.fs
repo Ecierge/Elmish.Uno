@@ -2,7 +2,6 @@
 
 open Elmish.Uno
 
-
 [<RequireQualifiedAccess>]
 type ConfirmState =
   | Submit

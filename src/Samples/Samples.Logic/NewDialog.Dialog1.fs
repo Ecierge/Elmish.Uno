@@ -2,7 +2,6 @@
 
 open Elmish.Uno
 
-
 module Dialog1 =
   let init = ""
 

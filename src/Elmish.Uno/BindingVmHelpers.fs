@@ -141,19 +141,20 @@ type SubModelBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
   GetCurrentModel: unit -> 'model
 }
 
-type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+type SubModelDialogBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelDialogData: SubModelDialogData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
   Dispatch: 'msg -> unit
-  WinRef: WeakReference<Window>
+  WinRef: WeakReference<ContentDialog>
   PreventClose: bool ref
   GetVmWinState: unit -> WindowState<'vm>
   SetVmWinState: WindowState<'vm> -> unit
   GetCurrentModel: unit -> 'model
 }
-type SubModelDialogBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  SubModelDialogData: SubModelDialogData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+
+type SubModelWinBinding<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  SubModelWinData: SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
   Dispatch: 'msg -> unit
-  WinRef: WeakReference<ContentDialog>
+  WinRef: WeakReference<Window>
   PreventClose: bool ref
   GetVmWinState: unit -> WindowState<'vm>
   SetVmWinState: WindowState<'vm> -> unit
@@ -207,8 +208,8 @@ type BaseVmBinding<'model, 'msg, 't> =
   | TwoWaySeq of TwoWaySeqBinding<'model, 'msg, objnull, 't, obj>
   | Cmd of cmd: Command
   | SubModel of SubModelBinding<'model, 'msg, objnull, objnull, 't>
-  | SubModelWin of SubModelWinBinding<'model, 'msg, objnull, objnull, 't>
   | SubModelDialog of SubModelDialogBinding<'model, 'msg, objnull, objnull, 't>
+  | SubModelWin of SubModelWinBinding<'model, 'msg, objnull, objnull, 't>
   | SubModelSeqUnkeyed of SubModelSeqUnkeyedBinding<'model, 'msg, objnull, objnull, objnull, 't>
   | SubModelSeqKeyed of SubModelSeqKeyedBinding<'model, 'msg, objnull, objnull, objnull, 't, obj>
   | SubModelSelectedItem of SubModelSelectedItemBinding<'model, 'msg, objnull, objnull, 't, objnull>
@@ -296,20 +297,6 @@ module internal MapOutputType =
         GetVm = b.GetVm >> ValueOption.map fOut
         SetVm = ValueOption.map fIn >> b.SetVm
         GetCurrentModel = b.GetCurrentModel }
-    | SubModelWin b -> SubModelWin {
-        SubModelWinData = {
-          GetState = b.SubModelWinData.GetState
-          CreateViewModel = b.SubModelWinData.CreateViewModel >> fOut
-          UpdateViewModel = (fun (vm,m) -> b.SubModelWinData.UpdateViewModel (fIn vm, m))
-          ToMsg = b.SubModelWinData.ToMsg
-          GetWindow = b.SubModelWinData.GetWindow
-          OnCloseRequested = b.SubModelWinData.OnCloseRequested }
-        Dispatch = b.Dispatch
-        WinRef = b.WinRef
-        PreventClose = b.PreventClose
-        GetVmWinState = b.GetVmWinState >> WindowState.map fOut
-        SetVmWinState = WindowState.map fIn >> b.SetVmWinState
-        GetCurrentModel = b.GetCurrentModel }
     | SubModelDialog b -> SubModelDialog {
         SubModelDialogData = {
           GetState = b.SubModelDialogData.GetState
@@ -318,6 +305,20 @@ module internal MapOutputType =
           ToMsg = b.SubModelDialogData.ToMsg
           GetWindow = b.SubModelDialogData.GetWindow
           OnCloseRequested = b.SubModelDialogData.OnCloseRequested }
+        Dispatch = b.Dispatch
+        WinRef = b.WinRef
+        PreventClose = b.PreventClose
+        GetVmWinState = b.GetVmWinState >> WindowState.map fOut
+        SetVmWinState = WindowState.map fIn >> b.SetVmWinState
+        GetCurrentModel = b.GetCurrentModel }
+    | SubModelWin b -> SubModelWin {
+        SubModelWinData = {
+          GetState = b.SubModelWinData.GetState
+          CreateViewModel = b.SubModelWinData.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm,m) -> b.SubModelWinData.UpdateViewModel (fIn vm, m))
+          ToMsg = b.SubModelWinData.ToMsg
+          GetWindow = b.SubModelWinData.GetWindow
+          OnCloseRequested = b.SubModelWinData.OnCloseRequested }
         Dispatch = b.Dispatch
         WinRef = b.WinRef
         PreventClose = b.PreventClose
@@ -513,39 +514,6 @@ type Initialize<'t>
                                                })
           |> SubModel
           |> Some
-      | SubModelWinData d ->
-          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure measure2
-          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
-          match d.GetState initialModel with
-          | WindowState.Closed ->
-              let mutable vmWinState = WindowState.Closed
-              { SubModelWinData = d
-                Dispatch = dispatch
-                WinRef = WeakReference<Window>(Unchecked.defaultof<Window>)
-                PreventClose = ref true
-                GetVmWinState = fun () -> vmWinState
-                SetVmWinState = fun vmState -> vmWinState <- vmState
-                GetCurrentModel = getCurrentModel
-              }
-          | WindowState.Visible m ->
-              let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
-              let vm = d.CreateViewModel args
-              let winRef = WeakReference<Window>(Unchecked.defaultof<Window>)
-              let preventClose = ref true
-              log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
-              Helpers2.showNewWindow winRef d.GetWindow d.OnCloseRequested preventClose vm getCurrentModel dispatch
-              let mutable vmWinState = WindowState.Visible vm
-              { SubModelWinData = d
-                Dispatch = dispatch
-                WinRef = winRef
-                PreventClose = preventClose
-                GetVmWinState = fun () -> vmWinState
-                SetVmWinState = fun vm -> vmWinState <- vm
-                GetCurrentModel = getCurrentModel
-              }
-          |> SubModelWin
-          |> Some
       | SubModelDialogData d ->
           let d = d |> BindingData.SubModelDialog.measureFunctions measure measure measure measure2
           let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
@@ -578,6 +546,39 @@ type Initialize<'t>
                 GetCurrentModel = getCurrentModel
               }
           |> SubModelDialog
+          |> Some
+      | SubModelWinData d ->
+          let d = d |> BindingData.SubModelWin.measureFunctions measure measure measure measure2
+          let toMsg = fun msg -> d.ToMsg (getCurrentModel ()) msg
+          match d.GetState initialModel with
+          | WindowState.Closed ->
+              let mutable vmWinState = WindowState.Closed
+              { SubModelWinData = d
+                Dispatch = dispatch
+                WinRef = WeakReference<Window>(Unchecked.defaultof<Window>)
+                PreventClose = ref true
+                GetVmWinState = fun () -> vmWinState
+                SetVmWinState = fun vmState -> vmWinState <- vmState
+                GetCurrentModel = getCurrentModel
+              }
+          | WindowState.Visible m ->
+              let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+              let args = ViewModelArgs.create m (toMsg >> dispatch) chain loggingArgs
+              let vm = d.CreateViewModel args
+              let winRef = WeakReference<Window>(Unchecked.defaultof<Window>)
+              let preventClose = ref true
+              log.LogTrace("[{BindingNameChain}] Creating visible window", chain)
+              Helpers2.showNewWindow winRef d.GetWindow d.OnCloseRequested preventClose vm getCurrentModel dispatch
+              let mutable vmWinState = WindowState.Visible vm
+              { SubModelWinData = d
+                Dispatch = dispatch
+                WinRef = winRef
+                PreventClose = preventClose
+                GetVmWinState = fun () -> vmWinState
+                SetVmWinState = fun vm -> vmWinState <- vm
+                GetCurrentModel = getCurrentModel
+              }
+          |> SubModelWin
           |> Some
       | SubModelSeqUnkeyedData d ->
           let d = d |> BindingData.SubModelSeqUnkeyed.measureFunctions measure measure measure measure measure2
@@ -713,52 +714,6 @@ type Update<'t>
         | ValueSome vm, ValueSome m ->
             d.UpdateViewModel (vm, m)
             []
-      | SubModelWin b ->
-          let d = b.SubModelWinData
-          let winPropChain = LoggingViewModelArgs.getNameChainFor nameChain name
-          let close () =
-            b.PreventClose.Value <- false
-            match b.WinRef.TryGetTarget () with
-            | false, _ ->
-                log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
-            | true, w ->
-
-                log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
-                b.WinRef.SetTarget (Unchecked.defaultof<Window>)
-                (*
-                 * The Window might be in the process of closing,
-                 * so instead of immediately executing Window.Close via DispatcherQueue.TryEnqueue,
-                 * queue a call to Window.Close via DispatcherQueue.TryEnqueue.
-                 * https://github.com/elmish/Elmish.WPF/issues/330
-                 *)
-                w.DispatcherQueue.TryEnqueue(fun () -> w.Close()) |> ignore
-
-          let showNew vm =
-            b.PreventClose.Value <- true
-            Helpers2.showNewWindow b.WinRef d.GetWindow d.OnCloseRequested b.PreventClose vm
-
-          let newVm model =
-            let toMsg = fun msg -> d.ToMsg (b.GetCurrentModel ()) msg
-            let chain = LoggingViewModelArgs.getNameChainFor nameChain name
-            let args = ViewModelArgs.create model (toMsg >> b.Dispatch) chain loggingArgs
-            d.CreateViewModel args
-
-          match b.GetVmWinState(), d.GetState newModel with
-          | WindowState.Closed, WindowState.Closed ->
-              []
-          | WindowState.Visible vm, WindowState.Visible m ->
-              d.UpdateViewModel (vm, m)
-              []
-          | WindowState.Visible _, WindowState.Closed ->
-              close ()
-              b.SetVmWinState WindowState.Closed
-              [ PropertyChanged name ]
-          | WindowState.Closed, WindowState.Visible m ->
-              let vm = newVm m
-              log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
-              showNew vm b.GetCurrentModel b.Dispatch
-              b.SetVmWinState (WindowState.Visible vm)
-              [ PropertyChanged name ]
       | SubModelDialog b ->
           let d = b.SubModelDialogData
           let winPropChain = LoggingViewModelArgs.getNameChainFor nameChain name
@@ -802,6 +757,52 @@ type Update<'t>
           | WindowState.Closed, WindowState.Visible m ->
               let vm = newVm m
               log.LogTrace("[{BindingNameChain}] Creating visible dialog", winPropChain)
+              showNew vm b.GetCurrentModel b.Dispatch
+              b.SetVmWinState (WindowState.Visible vm)
+              [ PropertyChanged name ]
+      | SubModelWin b ->
+          let d = b.SubModelWinData
+          let winPropChain = LoggingViewModelArgs.getNameChainFor nameChain name
+          let close () =
+            b.PreventClose.Value <- false
+            match b.WinRef.TryGetTarget () with
+            | false, _ ->
+                log.LogError("[{BindingNameChain}] Attempted to close window, but did not find window reference", winPropChain)
+            | true, w ->
+
+                log.LogTrace("[{BindingNameChain}] Closing window", winPropChain)
+                b.WinRef.SetTarget (Unchecked.defaultof<Window>)
+                (*
+                 * The Window might be in the process of closing,
+                 * so instead of immediately executing Window.Close via DispatcherQueue.TryEnqueue,
+                 * queue a call to Window.Close via DispatcherQueue.TryEnqueue.
+                 * https://github.com/elmish/Elmish.WPF/issues/330
+                 *)
+                w.DispatcherQueue.TryEnqueue(fun () -> w.Close()) |> ignore
+
+          let showNew vm =
+            b.PreventClose.Value <- true
+            Helpers2.showNewWindow b.WinRef d.GetWindow d.OnCloseRequested b.PreventClose vm
+
+          let newVm model =
+            let toMsg = fun msg -> d.ToMsg (b.GetCurrentModel ()) msg
+            let chain = LoggingViewModelArgs.getNameChainFor nameChain name
+            let args = ViewModelArgs.create model (toMsg >> b.Dispatch) chain loggingArgs
+            d.CreateViewModel args
+
+          match b.GetVmWinState(), d.GetState newModel with
+          | WindowState.Closed, WindowState.Closed ->
+              []
+          | WindowState.Visible vm, WindowState.Visible m ->
+              d.UpdateViewModel (vm, m)
+              []
+          | WindowState.Visible _, WindowState.Closed ->
+              close ()
+              b.SetVmWinState WindowState.Closed
+              [ PropertyChanged name ]
+          | WindowState.Closed, WindowState.Visible m ->
+              let vm = newVm m
+              log.LogTrace("[{BindingNameChain}] Creating visible window", winPropChain)
               showNew vm b.GetCurrentModel b.Dispatch
               b.SetVmWinState (WindowState.Visible vm)
               [ PropertyChanged name ]
@@ -875,12 +876,12 @@ type [<Struct>] Get<'t>(nameChain: string) =
     | TwoWaySeq { Values = vals } -> vals.GetCollection () |> Ok
     | Cmd cmd -> cmd |> unbox |> Ok
     | SubModel { GetVm = getvm } -> getvm() |> ValueOption.toNull |> Result.mapError GetError.ToNullError
-    | SubModelWin { GetVmWinState = getvm } ->
+    | SubModelDialog { GetVmWinState = getvm } ->
         getvm()
         |> WindowState.toVOption
         |> ValueOption.toNull
         |> Result.mapError GetError.ToNullError
-    | SubModelDialog { GetVmWinState = getvm } ->
+    | SubModelWin { GetVmWinState = getvm } ->
         getvm()
         |> WindowState.toVOption
         |> ValueOption.toNull
@@ -938,8 +939,8 @@ type [<Struct>] Set<'t>(value: 't) =
     | OneWaySeqGrouped _
     | Cmd _
     | SubModel _
-    | SubModelWin _
     | SubModelDialog _
+    | SubModelWin _
     | SubModelSeqUnkeyed _
     | SubModelSeqKeyed _ ->
         false

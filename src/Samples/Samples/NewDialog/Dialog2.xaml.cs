@@ -6,12 +6,4 @@ public partial class Dialog2 : ContentDialog
     {
         this.InitializeComponent();
     }
-
-    private void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-    }
-
-    private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-    }
 }
