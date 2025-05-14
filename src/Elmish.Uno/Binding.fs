@@ -2053,62 +2053,6 @@ type Binding private () =
 
 
   /// <summary>
-  ///   You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModel
-      (getSubModel: 'model -> 'subModel,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.required bindings
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings.
-  ///   You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModel
-      (getSubModel: 'model -> 'subModel,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.requiredLazy getBindings
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-
-  /// <summary>
-  ///   You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModel
-      (getSubModel: 'model -> 'subModel,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.required bindings
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings.
-  ///   You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModel
-      (getSubModel: 'model -> 'subModel,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.requiredLazy getBindings
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-
-  /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
   ///   model will return <c>null</c> unless <paramref name="sticky" /> is
@@ -2135,7 +2079,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel voption,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -2174,7 +2118,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel voption,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -2185,6 +2129,136 @@ type Binding private () =
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
+
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (getSubModel: 'model -> 'subModel voption,
+       toMsg: 'subMsg -> 'msg,
+       bindingsWithModel: Binding<'model * 'subModel, 'subMsg> list,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.vopt bindingsWithModel
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (getSubModel: 'model -> 'subModel voption,
+       toMsg: 'subMsg -> 'msg,
+       getBindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.voptLazy getBindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg toMsg
+
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings,
+  ///   and may not exist. If it does not exist, bindings to this model will
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (getSubModel: 'model -> 'subModel voption,
+       bindingsWithModel: Binding<'model * 'subModel, 'msg> list,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.vopt bindingsWithModel
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings,
+  ///   and may not exist. If it does not exist, bindings to this model will
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (getSubModel: 'model -> 'subModel voption,
+       getBindings: unit -> Binding<'model * 'subModel, 'msg> list,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModel.voptLazy getBindings
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
 
 
   /// <summary>
@@ -2214,7 +2288,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -2253,7 +2327,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg,
@@ -2290,149 +2364,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
-      (getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       bindingsWithModel: Binding<'model * 'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.vopt bindingsWithModel
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       getBindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.voptLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
   static member subModelOpt
-      (getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       bindings: Binding<'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.vopt bindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="getBbindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.voptLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
       (getSubModel: 'model -> 'subModel option,
        toMsg: 'subMsg -> 'msg,
        bindingsWithModel: Binding<'model * 'subModel, 'subMsg> list,
@@ -2467,7 +2399,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
        toMsg: 'subMsg -> 'msg,
        getBindings: unit -> Binding<'model * 'subModel, 'subMsg> list,
@@ -2480,136 +2412,6 @@ type Binding private () =
 
 
   /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel option,
-       toMsg: 'subMsg -> 'msg,
-       bindings: Binding<'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.opt bindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel option,
-       toMsg: 'subMsg -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'subMsg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.optLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (getSubModel: 'model -> 'subModel voption,
-       bindingsWithModel: Binding<'model * 'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.vopt bindingsWithModel
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (getSubModel: 'model -> 'subModel voption,
-       getBindings: unit -> Binding<'model * 'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.voptLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-
-
-  /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings,
   ///   and may not exist. If it does not exist, bindings to this model will
   ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
@@ -2630,65 +2432,6 @@ type Binding private () =
   ///   model will be returned instead of <c>null</c>.
   /// </param>
   static member subModelOpt
-      (getSubModel: 'model -> 'subModel voption,
-       bindings: Binding<'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.vopt bindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel voption,
-       getBindings: unit -> Binding<'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.voptLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
       (getSubModel: 'model -> 'subModel option,
        bindingsWithModel: Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
@@ -2717,7 +2460,7 @@ type Binding private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOptWithModel
+  static member subModelOpt
       (getSubModel: 'model -> 'subModel option,
        getBindings: unit -> Binding<'model * 'subModel, 'msg> list,
        ?sticky: bool)
@@ -2725,65 +2468,6 @@ type Binding private () =
     Binding.SubModel.optLazy getBindings
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel option,
-       bindings: Binding<'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.opt bindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (getSubModel: 'model -> 'subModel option,
-       getBindings: unit -> Binding<'subModel, 'msg> list,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModel.optLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
 
 
   /// <summary>
@@ -3073,7 +2757,7 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
@@ -3083,7 +2767,7 @@ type Binding private () =
   ///   sub-model ID and message type).
   /// </param>
   /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        getId: 'bindingModel -> 'id,
@@ -3107,7 +2791,7 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
@@ -3117,7 +2801,7 @@ type Binding private () =
   ///   sub-model ID and message type).
   /// </param>
   /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        getId: 'bindingModel -> 'id,
@@ -3142,6 +2826,83 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="bindings">The bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       getId: 'bindingModel -> 'id,
+       toMsg: 'id * 'bindingMsg -> 'msg,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       bindings: Binding<'bindingModel, 'bindingMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModelWithModel (m, sub)))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
+      (getSubModels: 'model -> #seq<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       getId: 'bindingModel -> 'id,
+       toMsg: 'id * 'bindingMsg -> 'msg,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg,
+       getBindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelSeqKeyed.create
+      (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, getBindings ()))
+      IViewModel.updateModel
+      getId
+      (IViewModel.currentModel >> getId)
+      (Loadable (hasMore, loadMore))
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModelWithModel (m, sub)))
+    >> Binding.mapMsg toMsg
+
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="toBindingModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
@@ -3151,8 +2912,8 @@ type Binding private () =
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  /// <param name="bindingsWithModel">The bindings for the sub-model.</param>
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        toMsg: 'id * 'bindingMsg -> 'msg,
@@ -3184,15 +2945,15 @@ type Binding private () =
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  /// <param name="getBindingsWithModel">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        toMsg: 'id * 'bindingMsg -> 'msg,
-       getBindings: unit -> Binding<'model * 'subModel, 'bindingMsg> list)
+       getBindingsWithModel: unit -> Binding<'model * 'subModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model * 'subModel, 'bindingMsg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'bindingMsg>(args, getBindingsWithModel ()))
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
@@ -3209,90 +2970,33 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="toMsg">
   ///   Converts the sub-model ID and messages used in the bindings to parent
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       toMsg: 'id * 'subMsg -> 'msg,
-       bindings: Binding<'subModel, 'subMsg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings and message type. You typically bind this to the
-  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-  ///   <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="toMsg">
-  ///   Converts the sub-model ID and messages used in the bindings to parent
-  ///   model messages (e.g. a parent message union case that wraps the
-  ///   sub-model ID and message type).
-  /// </param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       toMsg: 'id * 'subMsg -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'subMsg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, getBindings ()))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings and message type. You typically bind this to the
-  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-  ///   <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="toMsg">
-  ///   Converts the sub-model ID and messages used in the bindings to parent
-  ///   model messages (e.g. a parent message union case that wraps the
-  ///   sub-model ID and message type).
-  /// </param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
+  /// <param name="bindingsWithModel">The bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
-       toMsg: 'id * 'subMsg -> 'msg,
+       toMsg: 'id * 'bindingMsg -> 'msg,
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
-       bindings: Binding<'subModel, 'subMsg> list)
+       bindingsWithModel: Binding<'model * 'subModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'bindingMsg>(args, bindingsWithModel))
       IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
   /// <summary>
@@ -3303,30 +3007,33 @@ type Binding private () =
   ///   <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
   /// <param name="toMsg">
   ///   Converts the sub-model ID and messages used in the bindings to parent
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getBindingsWithModel">Returns the bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
-       toMsg: 'id * 'subMsg -> 'msg,
-       hasMore: seq<'subModel> -> bool,
+       toMsg: 'id * 'bindingMsg -> 'msg,
+       hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'subMsg> list)
+       getBindingsWithModel: unit -> Binding<'model * 'subModel, 'bindingMsg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'bindingMsg>(args, getBindingsWithModel ()))
       IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
 
@@ -3339,8 +3046,8 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="bindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        bindingsWithModel: Binding<'model * 'subModel, 'msg> list)
@@ -3363,14 +3070,14 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeqWithModel
+  /// <param name="getBindingsWithModel">Returns the bindings for the sub-model.</param>
+  static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
-       getBindings: unit -> Binding<'model * 'subModel, 'msg> list)
+       getBindingsWithModel: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, getBindingsWithModel ()))
       IViewModel.updateModel
       (snd >> getId)
       (IViewModel.currentModel >> snd >> getId)
@@ -3388,71 +3095,23 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
-       bindings: Binding<'subModel, 'msg> list)
+       bindingsWithModel: Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindingsWithModel))
       IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
   /// <summary>
@@ -3464,277 +3123,24 @@ type Binding private () =
   /// </summary>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getBindingsWithModel">Returns the bindings for the sub-model.</param>
   static member subModelSeq
       (getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
+       getBindingsWithModel: unit -> Binding<'model * 'subModel, 'msg> list)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, getBindingsWithModel ()))
       IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      Static
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getSubModels: 'model -> #seq<'subModel>,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      (Loadable (hasMore, loadMore))
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getId: 'subModel -> 'id,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'id * 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getId: 'subModel -> 'id,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'id * 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      Static
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (getId: 'subModel -> 'id,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'id * 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      (Loadable (hasMore, loadMore))
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getId: 'subModel -> 'id,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, 'id * 'msg> =
-    Binding.SubModelSeqKeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      getId
-      (IViewModel.currentModel >> getId)
-      (Loadable (hasMore, loadMore))
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, int * 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      Static
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, int * 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      Static
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="bindings">The bindings for the sub-model.</param>
-  static member subModelSeq
-      (hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       bindings: Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, int * 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
-      IViewModel.updateModel
-      (Loadable (hasMore, loadMore))
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-  static member subModelSeq
-      (hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg,
-       getBindings: unit -> Binding<'subModel, 'msg> list)
-      : string -> Binding<'model, int * 'msg> =
-    Binding.SubModelSeqUnkeyed.create
-      (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
-      IViewModel.updateModel
-      (Loadable (hasMore, loadMore))
 
 
   /// <summary>
@@ -3758,20 +3164,19 @@ type Binding private () =
   ///   The name of the <see cref="subModelSeq" /> binding used as the items
   ///   source.
   /// </param>
-  /// <param name="get">Gets the selected sub-model/sub-binding ID from the
-  /// model.</param>
-  /// <param name="set">
+  /// <param name="get">Gets the selected sub-model/sub-binding ID from the model.</param>
+  /// <param name="setWithModel">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
        get: 'model -> 'id voption,
-       set: 'id voption -> 'model -> 'msg)
+       setWithModel: 'id voption -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSelectedItem.vopt subModelSeqBindingName
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel set
+    >> Binding.mapMsgWithModel setWithModel
     >> Binding.addCaching
 
   /// <summary>
@@ -3797,18 +3202,18 @@ type Binding private () =
   /// </param>
   /// <param name="get">Gets the selected sub-model/sub-binding ID from the
   /// model.</param>
-  /// <param name="set">
+  /// <param name="setWithModel">
   ///   Returns the message to dispatch on selections/de-selections.
   /// </param>
   static member subModelSelectedItem
       (subModelSeqBindingName: string,
        get: 'model -> 'id option,
-       set: 'id option -> 'model -> 'msg)
+       setWithModel: 'id option -> 'model -> 'msg)
       : string -> Binding<'model, 'msg> =
     Binding.SubModelSelectedItem.opt subModelSeqBindingName
     >> Binding.addLazy (=)
     >> Binding.mapModel get
-    >> Binding.mapMsgWithModel set
+    >> Binding.mapMsgWithModel setWithModel
     >> Binding.addCaching
 
 
@@ -4341,92 +3746,263 @@ module Extensions =
 
 
     /// <summary>
-    ///   Creates a binding to a sequence of sub-models, each uniquely identified
-    ///   by the value returned by <paramref name="getId" />. The sub-models have
-    ///   their own bindings and message type. You typically bind this to the
-    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-    ///   <c>TreeView</c>, etc.
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
     /// </summary>
-    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
     /// <param name="bindings">The bindings for the sub-model.</param>
-    static member subModelSeq
-        (getId: 'model -> 'id,
-         bindings: Binding<'model, 'msg> list)
-        : string -> Binding<'model seq, 'id * 'msg> =
-      Binding.SubModelSeqKeyed.create
-        (fun args -> DynamicViewModel<'model, 'msg>(args, bindings))
-        IViewModel.updateModel
-        getId
-        (IViewModel.currentModel >> getId)
-        Static
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel voption,
+         toMsg: 'subMsg -> 'msg,
+         bindings: Binding<'subModel, 'subMsg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.vopt bindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
 
     /// <summary>
-    ///   Creates a binding to a sequence of sub-models, each uniquely identified
-    ///   by the value returned by <paramref name="getId" />. The sub-models have
-    ///   their own bindings and message type. You typically bind this to the
-    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-    ///   <c>TreeView</c>, etc.
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
     /// </summary>
-    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-    static member subModelSeq
-        (getId: 'model -> 'id,
-         getBindings: unit -> Binding<'model, 'msg> list)
-        : string -> Binding<'model seq, 'id * 'msg> =
-      Binding.SubModelSeqKeyed.create
-        (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
-        IViewModel.updateModel
-        getId
-        (IViewModel.currentModel >> getId)
-        Static
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getBbindings">Returns the bindings for the sub-model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel voption,
+         toMsg: 'subMsg -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'subMsg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.voptLazy getBindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
+
 
     /// <summary>
-    ///   Creates a binding to a sequence of sub-models, each uniquely identified
-    ///   by the value returned by <paramref name="getId" />. The sub-models have
-    ///   their own bindings and message type. You typically bind this to the
-    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-    ///   <c>TreeView</c>, etc.
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
     /// </summary>
-    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-    /// <param name="hasMore">Indicates whether there are more items to load.</param>
-    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
     /// <param name="bindings">The bindings for the sub-model.</param>
-    static member subModelSeq
-        (getId: 'model -> 'id,
-         hasMore: seq<'model> -> bool,
-         loadMore: uint * (uint -> unit) -> 'msg,
-         bindings: Binding<'model, 'msg> list)
-        : string -> Binding<'model seq, 'id * 'msg> =
-      Binding.SubModelSeqKeyed.create
-        (fun args -> DynamicViewModel<'model, 'msg>(args, bindings))
-        IViewModel.updateModel
-        getId
-        (IViewModel.currentModel >> getId)
-        (Loadable (hasMore, loadMore))
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel voption,
+         bindings: Binding<'subModel, 'msg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.vopt bindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
 
     /// <summary>
-    ///   Creates a binding to a sequence of sub-models, each uniquely identified
-    ///   by the value returned by <paramref name="getId" />. The sub-models have
-    ///   their own bindings and message type. You typically bind this to the
-    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-    ///   <c>TreeView</c>, etc.
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
     /// </summary>
-    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-    /// <param name="hasMore">Indicates whether there are more items to load.</param>
-    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
     /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-    static member subModelSeq
-        (getId: 'model -> 'id,
-         hasMore: seq<'model> -> bool,
-         loadMore: uint * (uint -> unit) -> 'msg,
-         getBindings: unit -> Binding<'model, 'msg> list)
-        : string -> Binding<'model seq, 'id * 'msg> =
-      Binding.SubModelSeqKeyed.create
-        (fun args -> DynamicViewModel<'model, 'msg>(args, getBindings ()))
-        IViewModel.updateModel
-        getId
-        (IViewModel.currentModel >> getId)
-        (Loadable (hasMore, loadMore))
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel voption,
+         getBindings: unit -> Binding<'subModel, 'msg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.voptLazy getBindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel option,
+         toMsg: 'subMsg -> 'msg,
+         bindings: Binding<'subModel, 'subMsg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.opt bindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel option,
+         toMsg: 'subMsg -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'subMsg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.optLazy getBindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel option,
+         bindings: Binding<'subModel, 'msg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.opt bindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (getSubModel: 'model -> 'subModel option,
+         getBindings: unit -> Binding<'subModel, 'msg> list,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModel.optLazy getBindings
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
 
 
     /// <summary>
@@ -4496,6 +4072,478 @@ module Extensions =
         Static
       >> Binding.mapModel (fun m -> getSubModels m |> Seq.map toBindingModel)
       >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="toBindingModel">
+    ///   Converts the models to the model used by the bindings.
+    /// </param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="hasMore">Returns true if there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         toBindingModel: 'subModel -> 'bindingModel,
+         getId: 'bindingModel -> 'id,
+         toMsg: 'id * 'bindingMsg -> 'msg,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         bindings: Binding<'bindingModel, 'bindingMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m |> Seq.map toBindingModel)
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="toBindingModel">
+    ///   Converts the models to the model used by the bindings.
+    /// </param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="hasMore">Returns true if there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         toBindingModel: 'subModel -> 'bindingModel,
+         getId: 'bindingModel -> 'id,
+         toMsg: 'id * 'bindingMsg -> 'msg,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         getBindings: unit -> Binding<'bindingModel, 'bindingMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m |> Seq.map toBindingModel)
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg,
+         bindings: Binding<'subModel, 'subMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'subMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         bindings: Binding<'subModel, 'subMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg,
+         hasMore: seq<'subModel> -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'subMsg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'subMsg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        Static
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getSubModels: 'model -> #seq<'subModel>,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg,
+         getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'model, 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        (Loadable (hasMore, loadMore))
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (getId: 'subModel -> 'id,
+         bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'subModel seq, 'id * 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getId: 'subModel -> 'id,
+         getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'subModel seq, 'id * 'msg> =
+      Binding.SubModelSeqKeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        getId
+        (IViewModel.currentModel >> getId)
+        Static
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="bindings">The bindings for the sub-model.</param>
+    static member subModelSeq
+        (bindings: Binding<'subModel, 'msg> list)
+        : string -> Binding<'subModel seq, int * 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, bindings))
+        IViewModel.updateModel
+        Static
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
+    static member subModelSeq
+        (getBindings: unit -> Binding<'subModel, 'msg> list)
+        : string -> Binding<'subModel seq, int * 'msg> =
+      Binding.SubModelSeqUnkeyed.create
+        (fun args -> DynamicViewModel<'subModel, 'msg>(args, getBindings ()))
+        IViewModel.updateModel
+        Static
 
 
     /// <summary>

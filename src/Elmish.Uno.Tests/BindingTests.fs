@@ -2305,7 +2305,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel = string >> ValueSome
-        let d = Binding.subModelOptWithModel(getSubModel, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2348,7 +2348,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel = string >> Some
-        let d = Binding.subModelOptWithModel(getSubModel, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2390,7 +2390,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel = string >> ValueSome
-        let d = Binding.subModelOptWithModel(getSubModel, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, fail, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2436,7 +2436,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel = string >> Some
-        let d = Binding.subModelOptWithModel(getSubModel, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, fail, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2471,7 +2471,7 @@ module subModelOpt =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelOptWithModel((fail: _ -> _ voption), fail, fail, [])
+        let binding = bindingName |> Binding.subModelOpt((fail: _ -> _ voption), fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2482,7 +2482,7 @@ module subModelOpt =
         let! x = GenX.auto<int>
         let getSubModel = string >> ValueSome
         let toBindingModel (m: int, s: string) = m + s.Length
-        let d = Binding.subModelOptWithModel(getSubModel, toBindingModel, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, toBindingModel, fail, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> toBindingModel |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2492,7 +2492,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel (_: int) : string voption = ValueNone
-        let d = Binding.subModelOptWithModel(getSubModel, fail, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, fail, fail, []) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
 
@@ -2504,7 +2504,7 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOptWithModel((fun _ -> ValueSome 0), (fun _ -> ValueSome 0), toMsg, []) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> ValueSome 0), (fun _ -> ValueSome 0), toMsg, []) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
       }
@@ -2518,7 +2518,7 @@ module subModelOpt =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelOptWithModel((fail: _ -> _ option), fail, fail, [])
+        let binding = bindingName |> Binding.subModelOpt((fail: _ -> _ option), fail, fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2529,7 +2529,7 @@ module subModelOpt =
         let! x = GenX.auto<int>
         let getSubModel = string >> Some
         let toBindingModel (m: int, s: string) = m + s.Length
-        let d = Binding.subModelOptWithModel(getSubModel, toBindingModel, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, toBindingModel, fail, []) |> getSubModelData
         test <@ d.GetModel x = ((x, (getSubModel x).Value) |> toBindingModel |> box |> nonNull |> ValueSome) @>
       }
 
@@ -2539,7 +2539,7 @@ module subModelOpt =
       Property.check <| property {
         let! x = GenX.auto<int>
         let getSubModel (_: int) : string option = None
-        let d = Binding.subModelOptWithModel(getSubModel, fail, fail, []) |> getSubModelData
+        let d = Binding.subModelOpt(getSubModel, fail, fail, []) |> getSubModelData
         test <@ d.GetModel x = ValueNone @>
       }
 
@@ -2551,7 +2551,7 @@ module subModelOpt =
         let! x = GenX.auto<int>
 
         let toMsg = string<int>
-        let d = Binding.subModelOptWithModel((fun _ -> Some 0), (fun _ _ -> Some 0), toMsg, []) |> getSubModelData
+        let d = Binding.subModelOpt((fun _ -> Some 0), (fun _ _ -> Some 0), toMsg, []) |> getSubModelData
 
         test <@ d.ToMsg m (box x) = toMsg x @>
       }
@@ -2567,7 +2567,7 @@ module subModelSeqKeyed =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, [])
+        let binding = bindingName |> Binding.subModelSeq(fail, fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2577,7 +2577,7 @@ module subModelSeqKeyed =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeqWithModel(getSubModels, fail, []) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeq(getSubModels, fail, []) |> getSubModelSeqKeyedData
         test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
@@ -2600,7 +2600,7 @@ module subModelSeqKeyed =
     let ``sets the correct binding name`` () =
       Property.check <| property {
         let! bindingName = GenX.auto<string>
-        let binding = bindingName |> Binding.subModelSeqWithModel(fail, fail, fail, [])
+        let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, [])
         test <@ binding.Name = bindingName @>
       }
 
@@ -2610,7 +2610,7 @@ module subModelSeqKeyed =
       Property.check <| property {
         let! m = GenX.auto<string>
         let getSubModels : string -> char list = Seq.toList
-        let d = Binding.subModelSeqWithModel(getSubModels, fail, fail, []) |> getSubModelSeqKeyedData
+        let d = Binding.subModelSeq(getSubModels, fail, fail, []) |> getSubModelSeqKeyedData
         test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> m, s)) @>
       }
 
@@ -2633,7 +2633,7 @@ module subModelSeqKeyed =
       let ``sets the correct binding name`` () =
         Property.check <| property {
           let! bindingName = GenX.auto<string>
-          let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, fail, [])
+          let binding = bindingName |> Binding.subModelSeq(fail, fail, fail, fail, bindings = [])
           test <@ binding.Name = bindingName @>
         }
 
@@ -2644,7 +2644,7 @@ module subModelSeqKeyed =
           let! m = GenX.auto<string>
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
-          let d = Binding.subModelSeqWithModel(getSubModels, toBindingModel, fail, fail, []) |> getSubModelSeqKeyedData
+          let d = Binding.subModelSeq(getSubModels, toBindingModel, fail, fail, []) |> getSubModelSeqKeyedData
           test <@ d.GetSubModels m |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s))) @>
         }
 
@@ -2656,7 +2656,7 @@ module subModelSeqKeyed =
           let getSubModels : string -> char list = Seq.toList
           let toBindingModel (m: string, c: char) = (m + string c).Length
           let getId i = i * 2
-          let d = Binding.subModelSeqWithModel(getSubModels, toBindingModel, getId, fail, []) |> getSubModelSeqKeyedData
+          let d = Binding.subModelSeq(getSubModels, toBindingModel, getId, fail, []) |> getSubModelSeqKeyedData
           test <@ d.GetSubModels m |> Seq.map d.BmToId |> Seq.map unbox |> Seq.toList = (m |> getSubModels |> List.map (fun s -> toBindingModel (m, s)) |> List.map getId) @>
         }
 

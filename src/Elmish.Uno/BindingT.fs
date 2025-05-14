@@ -1445,7 +1445,7 @@ type BindingT private () =
   ///   Converts the messages used in the bindings to parent model messages
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
-  static member subModel
+  static member subModelWithModel
       (createVm,
        getSubModel: 'model -> 'subModel,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
@@ -1466,7 +1466,7 @@ type BindingT private () =
   ///   Converts the messages used in the bindings to parent model messages
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
-  static member subModel
+  static member subModelWithModel
       (createVm,
        getSubModel: 'model -> 'subModel,
        toMsg: 'subMsg -> 'msg)
@@ -1482,7 +1482,7 @@ type BindingT private () =
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  static member subModel
+  static member subModelWithModel
       (createVm,
        getSubModel: 'model -> 'subModel)
       : string -> Binding<'model, 'msg, 'a> =
@@ -1528,6 +1528,70 @@ type BindingT private () =
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOptWithModel
+      (createVm,
+       getSubModel: 'model -> 'subModel voption,
+       toMsg: 'subMsg -> 'msg,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.vopt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings,
+  ///   and may not exist. If it does not exist, bindings to this model will
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOptWithModel
+      (createVm,
+       getSubModel: 'model -> 'subModel voption,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.vopt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
 
 
   /// <summary>
@@ -1595,78 +1659,6 @@ type BindingT private () =
   /// </param>
   static member subModelOptWithModel
       (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (createVm,
        getSubModel: 'model -> 'subModel option,
        toMsg: 'subMsg -> 'msg,
        ?sticky: bool)
@@ -1675,103 +1667,6 @@ type BindingT private () =
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel option,
-       toMsg: 'subMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.opt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings,
@@ -1801,36 +1696,6 @@ type BindingT private () =
     Binding.SubModelT.opt createVm
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel option,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.opt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
 
 
   /// <summary>
@@ -2120,7 +1985,7 @@ type BindingT private () =
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
@@ -2129,7 +1994,7 @@ type BindingT private () =
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  static member subModelSeqWithModel
+  static member subModelSeq
       (createVm,
        getSubModels: 'model -> #seq<'subModel>,
        toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
@@ -2140,6 +2005,44 @@ type BindingT private () =
       createVm
       getId
       (IViewModel.currentModel >> getId)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModelWithModel (m, sub)))
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sequence of sub-models, each uniquely identified
+  ///   by the value returned by <paramref name="getId" />. The sub-models have
+  ///   their own bindings and message type. You typically bind this to the
+  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+  ///   <c>TreeView</c>, etc.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the sub-model ID and messages used in the bindings to parent
+  ///   model messages (e.g. a parent message union case that wraps the
+  ///   sub-model ID and message type).
+  /// </param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
+  /// <param name="loadMore">Create a message to load more items.</param>
+  static member subModelSeq
+      (createVm,
+       getSubModels: 'model -> #seq<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       getId: 'bindingModel -> 'id,
+       toMsg: 'id * 'bindingMsg -> 'msg,
+       hasMore: 'model -> bool,
+       loadMore: uint * (uint -> unit) -> 'msg)
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+    Binding.SubModelSeqKeyedT.createIncrementalLoading
+      createVm
+      getId
+      (IViewModel.currentModel >> getId)
+      hasMore
+      loadMore
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2172,7 +2075,6 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
-
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
@@ -2188,37 +2090,9 @@ type BindingT private () =
   ///   model messages (e.g. a parent message union case that wraps the
   ///   sub-model ID and message type).
   /// </param>
-  static member subModelSeq
-      (createVm,
-       getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id,
-       toMsg: 'id * 'subMsg -> 'msg)
-      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqKeyedT.create
-      createVm
-      getId
-      (IViewModel.currentModel >> getId)
-    >> Binding.mapModel getSubModels
-    >> Binding.mapMsg toMsg
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings and message type. You typically bind this to the
-  ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
-  ///   <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="toMsg">
-  ///   Converts the sub-model ID and messages used in the bindings to parent
-  ///   model messages (e.g. a parent message union case that wraps the
-  ///   sub-model ID and message type).
-  /// </param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  static member subModelSeq
+  static member subModelSeqWithModel
       (createVm,
        getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
@@ -2228,11 +2102,11 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
     Binding.SubModelSeqKeyedT.createIncrementalLoading
       createVm
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       hasMore
       loadMore
-    >> Binding.mapModel getSubModels
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> m, sub))
     >> Binding.mapMsg toMsg
 
 
@@ -2258,7 +2132,6 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
-
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
@@ -2269,31 +2142,9 @@ type BindingT private () =
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  static member subModelSeq
-      (createVm,
-       getSubModels: 'model -> #seq<'subModel>,
-       getId: 'subModel -> 'id)
-      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqKeyedT.create
-      createVm
-      getId
-      (IViewModel.currentModel >> getId)
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  static member subModelSeq
+  static member subModelSeqWithModel
       (createVm,
        getSubModels: 'model -> #seq<'subModel>,
        getId: 'subModel -> 'id,
@@ -2302,52 +2153,12 @@ type BindingT private () =
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
     Binding.SubModelSeqKeyedT.createIncrementalLoading
       createVm
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       hasMore
       loadMore
-    >> Binding.mapModel (fun m -> getSubModels m)
+    >> Binding.mapModel (fun m -> getSubModels m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  static member subModelSeq
-      (createVm,
-       getSubModels: 'model -> #seq<'subModel>)
-      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqUnkeyedT.create createVm
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModels">Gets the sub-models from the model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  static member subModelSeq
-      (createVm,
-       getSubModels: 'model -> #seq<'subModel>,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg)
-      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
-    >> Binding.mapModel (fun m -> getSubModels m)
-    >> Binding.mapMsg snd
-
 
 
   /// <summary>
@@ -2371,7 +2182,6 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> m |> Seq.map (fun sub -> (m, sub)))
     >> Binding.mapMsg snd
 
-
   /// <summary>
   ///   Creates a binding to a sequence of sub-models, each uniquely identified
   ///   by the value returned by <paramref name="getId" />. The sub-models have
@@ -2380,68 +2190,24 @@ type BindingT private () =
   ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModels">Gets the sub-models from the model.</param>
   /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  static member subModelSeq
-      (createVm,
-       getId: 'subModel -> 'id)
-      : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqKeyedT.create
-      createVm
-      getId
-      (IViewModel.currentModel >> getId)
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by the value returned by <paramref name="getId" />. The sub-models have
-  ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
-  ///   an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getId">Gets a unique identifier for a sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
+  /// <param name="hasMore">Returns true if there are more items to load.</param>
   /// <param name="loadMore">Create a message to load more items.</param>
-  static member subModelSeq
+  static member subModelSeqWithModel
       (createVm,
        getId: 'subModel -> 'id,
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg)
-      : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
+      : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
     Binding.SubModelSeqKeyedT.createIncrementalLoading
       createVm
-      getId
-      (IViewModel.currentModel >> getId)
+      (snd >> getId)
+      (IViewModel.currentModel >> snd >> getId)
       hasMore
       loadMore
-
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  static member subModelSeq
-      createVm
-      : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqUnkeyedT.create createVm
-
-  /// <summary>
-  ///   Creates a binding to a sequence of sub-models, each uniquely identified
-  ///   by order number. The sub-models have their own bindings.
-  ///   You typically bind this to the <c>ItemsSource</c> of an
-  ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="hasMore">Indicates whether there are more items to load.</param>
-  /// <param name="loadMore">Create a message to load more items.</param>
-  static member subModelSeq
-      (createVm,
-       hasMore: 'model -> bool,
-       loadMore: uint * (uint -> unit) -> 'msg)
-      : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
-    Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
+    >> Binding.mapModel (fun m -> m |> Seq.map (fun sub -> (m, sub)))
+    >> Binding.mapMsg snd
 
 
   /// <summary>
@@ -3179,6 +2945,364 @@ module ExtensionsT =
         : string -> Binding<'model, 'msg, 'a> =
       Binding.SubModelT.req createVm
       >> Binding.mapModel getSubModel
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (createVm,
+         getSubModel: 'model -> 'subModel voption,
+         toMsg: 'subMsg -> 'msg,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.vopt createVm
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (createVm,
+         getSubModel: 'model -> 'subModel voption,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.vopt createVm
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings and
+    ///   message type, and may not exist. If it does not exist, bindings to this
+    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+    ///   returned. You typically bind this to the <c>DataContext</c> of a
+    ///   <c>UserControl</c> or similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (createVm,
+         getSubModel: 'model -> 'subModel option,
+         toMsg: 'subMsg -> 'msg,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.opt createVm
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sub-model/component that has its own bindings,
+    ///   and may not exist. If it does not exist, bindings to this model will
+    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+    ///   which case the last non-<c>null</c> model will be returned. You
+    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+    ///   similar.
+    ///
+    ///   The 'sticky' part is useful if you want to e.g. animate away a
+    ///   <c>UserControl</c> when the model is missing, but don't want the data
+    ///   used by that control to be cleared once the animation starts. (The
+    ///   animation must be triggered using another binding since this will never
+    ///   return <c>null</c>.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModel">Gets the sub-model from the model.</param>
+    /// <param name="sticky">
+    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+    ///   model will be returned instead of <c>null</c>.
+    /// </param>
+    static member subModelOpt
+        (createVm,
+         getSubModel: 'model -> 'subModel option,
+         ?sticky: bool)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelT.opt createVm
+      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+      >> Binding.mapModel (fun m -> getSubModel m)
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.create
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+      >> Binding.mapModel getSubModels
+      >> Binding.mapMsg toMsg
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings and message type. You typically bind this to the
+    ///   <c>ItemsSource</c> of an <c>ItemsControl</c>, <c>ListView</c>,
+    ///   <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the sub-model ID and messages used in the bindings to parent
+    ///   model messages (e.g. a parent message union case that wraps the
+    ///   sub-model ID and message type).
+    /// </param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         toMsg: 'id * 'subMsg -> 'msg,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.createIncrementalLoading
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+        hasMore
+        loadMore
+      >> Binding.mapModel getSubModels
+      >> Binding.mapMsg toMsg
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.create
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>,
+         getId: 'subModel -> 'id,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.createIncrementalLoading
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+        hasMore
+        loadMore
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqUnkeyedT.create createVm
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getSubModels">Gets the sub-models from the model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    static member subModelSeq
+        (createVm,
+         getSubModels: 'model -> #seq<'subModel>,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg)
+        : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
+      >> Binding.mapModel (fun m -> getSubModels m)
+      >> Binding.mapMsg snd
+
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    static member subModelSeq
+        (createVm,
+         getId: 'subModel -> 'id)
+        : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.create
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by the value returned by <paramref name="getId" />. The sub-models have
+    ///   their own bindings. You typically bind this to the <c>ItemsSource</c> of
+    ///   an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getId">Gets a unique identifier for a sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    static member subModelSeq
+        (createVm,
+         getId: 'subModel -> 'id,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg)
+        : string -> Binding<'model, 'id * 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqKeyedT.createIncrementalLoading
+        createVm
+        getId
+        (IViewModel.currentModel >> getId)
+        hasMore
+        loadMore
+
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    static member subModelSeq
+        createVm
+        : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqUnkeyedT.create createVm
+
+    /// <summary>
+    ///   Creates a binding to a sequence of sub-models, each uniquely identified
+    ///   by order number. The sub-models have their own bindings.
+    ///   You typically bind this to the <c>ItemsSource</c> of an
+    ///   <c>ItemsControl</c>, <c>ListView</c>, <c>TreeView</c>, etc.
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="hasMore">Indicates whether there are more items to load.</param>
+    /// <param name="loadMore">Create a message to load more items.</param>
+    static member subModelSeq
+        (createVm,
+         hasMore: 'model -> bool,
+         loadMore: uint * (uint -> unit) -> 'msg)
+        : string -> Binding<'model, int * 'msg, ObservableCollection<'a>> =
+      Binding.SubModelSeqUnkeyedT.createIncrementalLoading createVm hasMore loadMore
 
 
     /// <summary>
