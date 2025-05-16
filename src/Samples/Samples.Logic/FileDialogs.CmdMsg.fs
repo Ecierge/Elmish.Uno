@@ -119,7 +119,8 @@ module Platform =
       }
     //).AsTask().AsAsync()
 
-  let toCmd = function
+  let toCmd cmd =
+    match cmd with
     | Save text -> Cmd.OfAsync.either save text id SaveFailed
     | Load -> Cmd.OfAsync.either load () id LoadFailed
 

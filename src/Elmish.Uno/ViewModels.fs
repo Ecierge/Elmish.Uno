@@ -331,6 +331,9 @@ and GetCustomProperty(name: string) =
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, System.Windows.Input.ICommand>(name,
         fun vm -> vm.TryGetMemberCore(name, rootBinding) :?> _ | null) :> _
     | SubModel _
+    | SubModelDialog _ ->
+      DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
+        fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _
     | SubModelWin _ ->
       DynamicCustomProperty<DynamicViewModel<'model,'msg>, obj | null>(name,
         fun vm -> vm.TryGetMemberCore(name, rootBinding)) :> _

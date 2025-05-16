@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module AutoOpen
+module AutoOpenDialog
 
 open Microsoft.UI.Xaml
 
@@ -8,10 +8,9 @@ let flip f b a = f a b
 let map get set f a =
   a |> get |> f |> flip set a
 
-
 [<RequireQualifiedAccess>]
 module Bool =
-  open System.Windows
+
   let toVisibilityCollapsed isVisible =
     match isVisible with
     | true  -> Visibility.Visible

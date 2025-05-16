@@ -49,8 +49,8 @@ let update msg m =
   | NewPointerPosition p -> { m with MousePosition = p }
 
 
-let paramToNewMousePositionMsg (p: obj) =
-  let args = p :?> PointerEventArgs
+let paramToNewMousePositionMsg (p: objnull) =
+  let args = p |> nonNull :?> PointerEventArgs
   //let e = args.OriginalSource :?> UIElement;
   let point = args.CurrentPoint.Position
   NewPointerPosition { X = int point.X; Y = int point.Y }

@@ -10,6 +10,7 @@ open System.Collections.Specialized
 open System.Runtime.InteropServices
 open System.Windows.Input
 open Microsoft.UI.Xaml
+open Microsoft.UI.Xaml.Controls
 
 module Binding =
   open BindingData
@@ -797,6 +798,41 @@ module Binding =
       SubModelWin.create getState createVM IViewModel.updateModel toMsg getWindow onCloseRequested
       |> createBindingT
 
+  module SubModelDialogT =
+
+    /// <summary>
+    ///   Creates an elemental <c>SubModelDialogT</c> binding.
+    ///   Like <see cref="SubModelT.opt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/hide/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (either in code
+    ///   or in XAML).
+    ///   The window can only be closed/hidden by changing the return value of
+    ///   <paramref name="getState" />, and cannot be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it
+    ///   or displaying relevant feedback to the user).
+    /// </summary>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="createVM">Returns the view model for the window.</param>
+    /// <param name="getDialog">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    let create
+      (getState: 'model -> WindowState<'bindingModel>)
+      (createVM: ViewModelArgs<'bindingModel, 'bindingMsg> -> #IViewModel<'bindingModel, 'bindingMsg>)
+      toMsg getDialog onCloseRequested =
+      SubModelDialog.create getState createVM IViewModel.updateModel toMsg getDialog onCloseRequested
+      |> createBindingT
+
 
   module SelectedIndexT =
     /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
@@ -830,6 +866,12 @@ module Binding =
 
     let internal create getState createViewModel updateViewModel toMsg getWindow onCloseRequested =
       SubModelWin.create getState createViewModel updateViewModel toMsg getWindow onCloseRequested
+      |> createBinding
+
+  module SubModelDialog =
+
+    let internal create getState createViewModel updateViewModel toMsg getWindow onCloseRequested =
+      SubModelDialog.create getState createViewModel updateViewModel toMsg getWindow onCloseRequested
       |> createBinding
 
 
@@ -2472,13 +2514,281 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new content dialog that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  ///
+  ///   If you don't need a sub-model, you can use
+  ///   <c>WindowState&lt;unit&gt;</c> to just control the ContentDialog visibility,
+  ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       bindings: Binding<'bindingModel, 'bindingMsg> list,
+       getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelDialog.create
+      (fun m -> getState m |> WindowState.map (fun sub -> toBindingModelWithModel (m, sub)))
+      (fun args -> DynamicViewModel<'bindingModel, 'bindingMsg>(args, bindings))
+      IViewModel.updateModel
+      (fun _ -> toMsg)
+      (fun m d -> getDialog m d)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/hide/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed/hidden by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts (the Close/X button, Alt+F4, or System`
+  ///   Menu -> Close) will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       toMsg: 'subMsg -> 'msg,
+       bindingsWithModel: Binding<'model * 'subModel, 'subMsg> list,
+       getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelDialog.create
+      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'subMsg>(args, bindingsWithModel))
+      IViewModel.updateModel
+      (fun _ -> toMsg)
+      (fun m d -> getDialog m d)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       bindingsWithModel: Binding<'model * 'subModel, 'msg> list,
+       getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.SubModelDialog.create
+      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+      (fun args -> DynamicViewModel<'model * 'subModel, 'msg>(args, bindingsWithModel))
+      IViewModel.updateModel
+      (fun _ -> id)
+      (fun m d -> getDialog m d)
+      (fun _ -> defaultArg (onCloseRequested |> Option.map ValueSome) ValueNone)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  ///
+  ///   If you don't need a sub-model, you can use
+  ///   <c>WindowState&lt;unit&gt;</c> to just control the ContentDialog visibility,
+  ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindings">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       bindings: Binding<'bindingModel, 'bindingMsg> list,
+       getDialog: unit -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.subModelDialog(
+      getState,
+      toBindingModelWithModel,
+      toMsg,
+      bindings,
+      (fun _ _ -> getDialog()),
+      ?onCloseRequested = onCloseRequested)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       toMsg: 'subMsg -> 'msg,
+       bindingsWithModel: Binding<'model * 'subModel, 'subMsg> list,
+       getDialog: unit -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.subModelDialog(
+      getState,
+      toMsg,
+      bindingsWithModel,
+      (fun _ _ -> getDialog ()),
+      ?onCloseRequested = onCloseRequested)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  /// </summary>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="bindingsWithModel">Returns the bindings for the sub-model.</param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (getState: 'model -> WindowState<'subModel>,
+       bindingsWithModel: Binding<'model * 'subModel, 'msg> list,
+       getDialog: unit -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg> =
+    Binding.subModelDialog(
+      getState,
+      bindingsWithModel,
+      (fun _ _ -> getDialog ()),
+      ?onCloseRequested = onCloseRequested)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -2526,13 +2836,13 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -2580,13 +2890,13 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -2626,13 +2936,13 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -2671,13 +2981,13 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -2712,13 +3022,13 @@ type Binding private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -3742,266 +4052,6 @@ module Extensions =
          getBindings: unit -> Binding<'subModel, 'msg> list)
         : string -> Binding<'model, 'msg> =
       Binding.SubModel.requiredLazy getBindings
-      >> Binding.mapModel (fun m -> getSubModel m)
-
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings and
-    ///   message type, and may not exist. If it does not exist, bindings to this
-    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-    ///   returned. You typically bind this to the <c>DataContext</c> of a
-    ///   <c>UserControl</c> or similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="toMsg">
-    ///   Converts the messages used in the bindings to parent model messages
-    ///   (e.g. a parent message union case that wraps the child message type).
-    /// </param>
-    /// <param name="bindings">The bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel voption,
-         toMsg: 'subMsg -> 'msg,
-         bindings: Binding<'subModel, 'subMsg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.vopt bindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-      >> Binding.mapMsg toMsg
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings and
-    ///   message type, and may not exist. If it does not exist, bindings to this
-    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-    ///   returned. You typically bind this to the <c>DataContext</c> of a
-    ///   <c>UserControl</c> or similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="toMsg">
-    ///   Converts the messages used in the bindings to parent model messages
-    ///   (e.g. a parent message union case that wraps the child message type).
-    /// </param>
-    /// <param name="getBbindings">Returns the bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel voption,
-         toMsg: 'subMsg -> 'msg,
-         getBindings: unit -> Binding<'subModel, 'subMsg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.voptLazy getBindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-      >> Binding.mapMsg toMsg
-
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings,
-    ///   and may not exist. If it does not exist, bindings to this model will
-    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-    ///   which case the last non-<c>null</c> model will be returned. You
-    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-    ///   similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="bindings">The bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel voption,
-         bindings: Binding<'subModel, 'msg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.vopt bindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings,
-    ///   and may not exist. If it does not exist, bindings to this model will
-    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-    ///   which case the last non-<c>null</c> model will be returned. You
-    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-    ///   similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel voption,
-         getBindings: unit -> Binding<'subModel, 'msg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.voptLazy getBindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings and
-    ///   message type, and may not exist. If it does not exist, bindings to this
-    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-    ///   returned. You typically bind this to the <c>DataContext</c> of a
-    ///   <c>UserControl</c> or similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="toMsg">
-    ///   Converts the messages used in the bindings to parent model messages
-    ///   (e.g. a parent message union case that wraps the child message type).
-    /// </param>
-    /// <param name="bindings">The bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel option,
-         toMsg: 'subMsg -> 'msg,
-         bindings: Binding<'subModel, 'subMsg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.opt bindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-      >> Binding.mapMsg toMsg
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings and
-    ///   message type, and may not exist. If it does not exist, bindings to this
-    ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-    ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-    ///   returned. You typically bind this to the <c>DataContext</c> of a
-    ///   <c>UserControl</c> or similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="toMsg">
-    ///   Converts the messages used in the bindings to parent model messages
-    ///   (e.g. a parent message union case that wraps the child message type).
-    /// </param>
-    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel option,
-         toMsg: 'subMsg -> 'msg,
-         getBindings: unit -> Binding<'subModel, 'subMsg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.optLazy getBindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-      >> Binding.mapMsg toMsg
-
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings,
-    ///   and may not exist. If it does not exist, bindings to this model will
-    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-    ///   which case the last non-<c>null</c> model will be returned. You
-    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-    ///   similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="bindings">The bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel option,
-         bindings: Binding<'subModel, 'msg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.opt bindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-      >> Binding.mapModel (fun m -> getSubModel m)
-
-    /// <summary>
-    ///   Creates a binding to a sub-model/component that has its own bindings,
-    ///   and may not exist. If it does not exist, bindings to this model will
-    ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-    ///   which case the last non-<c>null</c> model will be returned. You
-    ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-    ///   similar.
-    ///
-    ///   The 'sticky' part is useful if you want to e.g. animate away a
-    ///   <c>UserControl</c> when the model is missing, but don't want the data
-    ///   used by that control to be cleared once the animation starts. (The
-    ///   animation must be triggered using another binding since this will never
-    ///   return <c>null</c>.)
-    /// </summary>
-    /// <param name="getSubModel">Gets the sub-model from the model.</param>
-    /// <param name="getBindings">Returns the bindings for the sub-model.</param>
-    /// <param name="sticky">
-    ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-    ///   model will be returned instead of <c>null</c>.
-    /// </param>
-    static member subModelOpt
-        (getSubModel: 'model -> 'subModel option,
-         getBindings: unit -> Binding<'subModel, 'msg> list,
-         ?sticky: bool)
-        : string -> Binding<'model, 'msg> =
-      Binding.SubModel.optLazy getBindings
-      >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
       >> Binding.mapModel (fun m -> getSubModel m)
 
 

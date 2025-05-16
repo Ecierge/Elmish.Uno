@@ -8,6 +8,7 @@ open System.Collections.ObjectModel
 open System.Collections.Specialized
 open System.Windows.Input
 open Microsoft.UI.Xaml
+open Microsoft.UI.Xaml.Controls
 
 open Elmish
 open Elmish.Collections
@@ -111,14 +112,20 @@ type SubModelData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
 }
 
 
-and SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
-  GetState : 'model -> WindowState<'bindingModel>
-  CreateViewModel : ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
-  UpdateViewModel : 'vm * 'bindingModel -> unit
-  ToMsg : 'model -> 'bindingMsg -> 'msg
-  GetWindow : 'model -> Dispatch<'msg> -> Window
-  OnCloseRequested : 'model -> 'msg voption
+and SubModelWinData<'window, 'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> = {
+  GetState: 'model -> WindowState<'bindingModel>
+  CreateViewModel: ViewModelArgs<'bindingModel, 'bindingMsg> -> 'vm
+  UpdateViewModel: 'vm * 'bindingModel -> unit
+  ToMsg: 'model -> 'bindingMsg -> 'msg
+  GetWindow: 'model -> Dispatch<'msg> -> 'window
+  OnCloseRequested: 'model -> 'msg voption
 }
+
+and SubModelDialogData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> =
+    SubModelWinData<ContentDialog, 'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
+
+and SubModelWinData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm> =
+    SubModelWinData<Window, 'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>
 
 
 and SubModelSeqUnkeyedData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm, 'vmCollection> = {
@@ -191,6 +198,7 @@ and BaseBindingData<'model, 'msg, 't> =
   | TwoWaySeqData of TwoWaySeqData<'model, 'msg, objnull, 't, obj>
   | CmdData of CmdData<'model, 'msg>
   | SubModelData of SubModelData<'model, 'msg, objnull, objnull, 't>
+  | SubModelDialogData of SubModelDialogData<'model, 'msg, objnull, objnull, 't>
   | SubModelWinData of SubModelWinData<'model, 'msg, objnull, objnull, 't>
   | SubModelSeqUnkeyedData of SubModelSeqUnkeyedData<'model, 'msg, objnull, objnull, objnull, 't>
   | SubModelSeqKeyedData of SubModelSeqKeyedData<'model, 'msg, objnull, objnull, objnull, 't, obj>
@@ -244,6 +252,15 @@ module BindingData =
           CreateViewModel = d.CreateViewModel >> fOut
           UpdateViewModel = (fun (vm, m) -> d.UpdateViewModel (fIn vm, m))
           ToMsg = d.ToMsg
+        }
+      | SubModelDialogData d ->
+        SubModelDialogData {
+          GetState = d.GetState
+          CreateViewModel = d.CreateViewModel >> fOut
+          UpdateViewModel = (fun (vm, m) -> d.UpdateViewModel (fIn vm, m))
+          ToMsg = d.ToMsg
+          GetWindow = d.GetWindow
+          OnCloseRequested = d.OnCloseRequested
         }
       | SubModelWinData d ->
         SubModelWinData {
@@ -346,6 +363,15 @@ module BindingData =
           UpdateViewModel = d.UpdateViewModel
           ToMsg = f >> d.ToMsg
         }
+      | SubModelDialogData d ->
+        SubModelDialogData {
+          GetState = f >> d.GetState
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
+          ToMsg = f >> d.ToMsg
+          GetWindow = f >> d.GetWindow
+          OnCloseRequested = f >> d.OnCloseRequested
+        }
       | SubModelWinData d ->
         SubModelWinData {
           GetState = f >> d.GetState
@@ -440,6 +466,19 @@ module BindingData =
           CreateViewModel = d.CreateViewModel
           UpdateViewModel = d.UpdateViewModel
           ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
+        }
+      | SubModelDialogData d ->
+        SubModelDialogData {
+          GetState = d.GetState
+          CreateViewModel = d.CreateViewModel
+          UpdateViewModel = d.UpdateViewModel
+          ToMsg = fun m bMsg -> f (d.ToMsg m bMsg) m
+          GetWindow = fun m dispatch -> d.GetWindow m (fun msg -> f msg m |> dispatch)
+          OnCloseRequested =
+            fun m ->
+              m
+              |> d.OnCloseRequested
+              |> ValueOption.map (fun msg -> f msg m)
         }
       | SubModelWinData d ->
         SubModelWinData {
@@ -591,7 +630,7 @@ module BindingData =
             match incrementalLoader with
             | Static -> items |> ObservableCollection |> CollectionTarget.create
             | Loadable (hasMoreItems, loadMoreItems) ->
-              IncrementalLoadingCollection<'a> (items, (getRootModel >> unbox >> hasMoreItems), loadMoreItems >> box >> dispatch)
+              IncrementalLoadingCollection (items, (getRootModel >> unbox >> hasMoreItems), loadMoreItems >> box >> dispatch)
               |> CollectionTarget.create
         ItemEquals = itemEquals
         GetId = getId
@@ -827,6 +866,64 @@ module BindingData =
         (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
         (mUpdateViewModel "updateViewModel")
         (mToMsg "toMsg")
+
+  
+  module SubModelDialog =
+
+    let mapMinorTypes
+        (outMapBindingModel: 'bindingModel -> 'bindingModel0)
+        (outMapBindingMsg: 'bindingMsg -> 'bindingMsg0)
+        (inMapBindingModel: 'bindingModel0 -> 'bindingModel)
+        (inMapBindingMsg: 'bindingMsg0 -> 'bindingMsg)
+        (d: SubModelDialogData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) = {
+      GetState = d.GetState >> WindowState.map outMapBindingModel
+      CreateViewModel = fun args -> d.CreateViewModel(args |> ViewModelArgs.map inMapBindingModel outMapBindingMsg)
+      UpdateViewModel = fun (vm, m) -> d.UpdateViewModel (vm, inMapBindingModel m)
+      ToMsg = fun m bMsg -> d.ToMsg m (inMapBindingMsg bMsg)
+      GetWindow = d.GetWindow
+      OnCloseRequested = d.OnCloseRequested
+    }
+
+    let boxMinorTypes d = d |> mapMinorTypes box box unbox unbox
+
+    let create getState createViewModel updateViewModel toMsg getDialog onCloseRequested =
+      { GetState = getState
+        CreateViewModel = createViewModel
+        UpdateViewModel = updateViewModel
+        ToMsg = toMsg
+        GetWindow = getDialog
+        OnCloseRequested = onCloseRequested }
+      |> boxMinorTypes
+      |> SubModelDialogData
+      |> BaseBindingData
+
+    let private mapFunctions
+        mGetState
+        mGetBindings
+        mUpdateViewModel
+        mToMsg
+        mGetDialog
+        mOnCloseRequested
+        (d: SubModelDialogData<'model, 'msg, 'bindingModel, 'bindingMsg, 'vm>) =
+      { d with GetState = mGetState d.GetState
+               CreateViewModel = mGetBindings d.CreateViewModel
+               UpdateViewModel = mUpdateViewModel d.UpdateViewModel
+               ToMsg = mToMsg d.ToMsg
+               GetWindow = mGetDialog d.GetWindow
+               OnCloseRequested = mOnCloseRequested d.OnCloseRequested }
+
+    let measureFunctions
+        mGetState
+        mGetBindings
+        mUpdateViewModel
+        mToMsg =
+      mapFunctions
+        (mGetState "getState")
+        (mGetBindings "bindings") // sic: "getBindings" would be following the pattern
+        (mUpdateViewModel "updateViewModel")
+        (mToMsg "toMsg")
+        id // sic: could measure GetWindow
+        id // sic: could measure OnCloseRequested
 
 
   module SubModelWin =

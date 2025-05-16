@@ -9,6 +9,7 @@ open System.Collections.Specialized
 open System.Runtime.InteropServices
 open System.Windows.Input
 open Microsoft.UI.Xaml
+open Microsoft.UI.Xaml.Controls
 
 [<AbstractClass; Sealed>]
 type BindingT private () =
@@ -1015,7 +1016,7 @@ type BindingT private () =
        getId: 'T -> 'id,
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
-       update: NotifyCollectionChangedEventArgs -> seq<'T> -> 'msg)
+       update: NotifyCollectionChangedEventArgs -> 'model -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
     Binding.TwoWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore update
     >> Binding.addLazy refEq
@@ -1438,7 +1439,7 @@ type BindingT private () =
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="toMsg">
@@ -1506,7 +1507,7 @@ type BindingT private () =
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="toMsg">
@@ -1610,7 +1611,7 @@ type BindingT private () =
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="toMsg">
@@ -1700,13 +1701,117 @@ type BindingT private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new content dialog that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  ///
+  ///   If you don't need a sub-model, you can use
+  ///   <c>WindowState&lt;unit&gt;</c> to just control the ContentDialog visibility,
+  ///   and pass <c>fst</c> to <paramref name="toBindingModelWithModel" />.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the content dialog.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (createVm,
+       getState: 'model -> WindowState<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelDialogT.create
+      (fun m -> getState m |> WindowState.map (fun sub -> toBindingModelWithModel (m, sub)))
+      createVm
+      (fun _ -> toMsg)
+      (fun m d -> getDialog m d)
+      (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new content dialog that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The content dialog can only be closed by changing the return value of
+  ///   <paramref name="getState" />, and can not be directly closed by the
+  ///   user. External close attempts will cause the message specified by
+  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+  ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+  ///   or displaying relevant feedback to the user.)
+  ///
+  ///   If you don't need a sub-model, you can use
+  ///   <c>WindowState&lt;unit&gt;</c> to just control the ContentDialog visibility,
+  ///   and pass <c>fst</c> to <paramref name="toBindingModelWithModel" />.
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+  /// <param name="toBindingModelWithModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="getDialog">
+  ///   The function used to get and configure the window.
+  /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+  static member subModelDialog
+      (createVm,
+       getState: 'model -> WindowState<'subModel>,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       getDialog: unit -> ContentDialog,
+       ?onCloseRequested: 'msg)
+      : string -> Binding<'model, 'msg, 'a> =
+    BindingT.subModelDialog(
+      createVm,
+      getState,
+      toBindingModelWithModel,
+      toMsg,
+      (fun _ _ -> getDialog ()),
+      ?onCloseRequested = onCloseRequested
+    )
+
+
+  /// <summary>
+  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+  ///   to show/close a new window that will have the specified bindings as
+  ///   its <c>DataContext</c>.
+  ///
+  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+  ///   nor XAML).
+  ///
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -1717,11 +1822,11 @@ type BindingT private () =
   ///
   ///   If you don't need a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
-  ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
+  ///   and pass <c>fst</c> to <paramref name="toBindingModelWithModel" />.
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="toMsg">
@@ -1753,13 +1858,13 @@ type BindingT private () =
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
+  ///   to show/close a new window that will have the specified bindings as
   ///   its <c>DataContext</c>.
   ///
   ///   You do not need to set the <c>DataContext</c> yourself (neither in code
   ///   nor XAML).
   ///
-  ///   The window can only be closed/hidden by changing the return value of
+  ///   The window can only be closed by changing the return value of
   ///   <paramref name="getState" />, and can not be directly closed by the
   ///   user. External close attempts (the Close/X button, Alt+F4, or System
   ///   Menu -> Close) will cause the message specified by
@@ -1770,11 +1875,11 @@ type BindingT private () =
   ///
   ///   If you don't need a sub-model, you can use
   ///   <c>WindowState&lt;unit&gt;</c> to just control the Window visibility,
-  ///   and pass <c>fst</c> to <paramref name="toBindingModel" />.
+  ///   and pass <c>fst</c> to <paramref name="toBindingModelWithModel" />.
   /// </summary>
   /// <param name="createVm">Creates the view model for the sub-model.</param>
   /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="toBindingModel">
+  /// <param name="toBindingModelWithModel">
   ///   Converts the models to the model used by the bindings.
   /// </param>
   /// <param name="toMsg">
@@ -1801,176 +1906,6 @@ type BindingT private () =
       getState,
       toBindingModelWithModel,
       toMsg,
-      (fun _ _ -> getWindow ()),
-      ?onCloseRequested = onCloseRequested
-    )
-
-
-  /// <summary>
-  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
-  ///   its <c>DataContext</c>.
-  ///
-  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
-  ///   nor XAML).
-  ///
-  ///   The window can only be closed/hidden by changing the return value of
-  ///   <paramref name="getState" />, and can not be directly closed by the
-  ///   user. External close attempts (the Close/X button, Alt+F4, or System
-  ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
-  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
-  ///   will not confuse a user trying to close the window (e.g. by closing it,
-  ///   or displaying relevant feedback to the user.)
-  /// </summary>
-  /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="getWindow">
-  ///   The function used to get and configure the window.
-  /// </param>
-  /// <param name="onCloseRequested">
-  ///   The message to be dispatched on external close attempts (the Close/X
-  ///   button, Alt+F4, or System Menu -> Close).
-  /// </param>
-  static member subModelWin
-      (createVm,
-       getState: 'model -> WindowState<'subModel>,
-       toMsg: 'subMsg -> 'msg,
-       getWindow: 'model -> Dispatch<'msg> -> Window,
-       ?onCloseRequested: 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelWinT.create
-      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      createVm
-      (fun _ -> toMsg)
-      (fun m d -> getWindow m d)
-      (fun _ -> onCloseRequested |> ValueOption.ofOption)
-
-
-  /// <summary>
-  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
-  ///   its <c>DataContext</c>.
-  ///
-  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
-  ///   nor XAML).
-  ///
-  ///   The window can only be closed/hidden by changing the return value of
-  ///   <paramref name="getState" />, and can not be directly closed by the
-  ///   user. External close attempts (the Close/X button, Alt+F4, or System
-  ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
-  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
-  ///   will not confuse a user trying to close the window (e.g. by closing it,
-  ///   or displaying relevant feedback to the user.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="getWindow">
-  ///   The function used to get and configure the window.
-  /// </param>
-  /// <param name="onCloseRequested">
-  ///   The message to be dispatched on external close attempts (the Close/X
-  ///   button, Alt+F4, or System Menu -> Close).
-  /// </param>
-  static member subModelWin
-      (createVm,
-       getState: 'model -> WindowState<'subModel>,
-       toMsg: 'subMsg -> 'msg,
-       getWindow: unit -> Window,
-       ?onCloseRequested: 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelWinT.create
-      getState
-      createVm
-      (fun _ -> toMsg)
-      (fun _ _ -> getWindow())
-      (fun _ -> onCloseRequested |> ValueOption.ofOption)
-
-
-  /// <summary>
-  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
-  ///   its <c>DataContext</c>.
-  ///
-  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
-  ///   nor XAML).
-  ///
-  ///   The window can only be closed/hidden by changing the return value of
-  ///   <paramref name="getState" />, and can not be directly closed by the
-  ///   user. External close attempts (the Close/X button, Alt+F4, or System
-  ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
-  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
-  ///   will not confuse a user trying to close the window (e.g. by closing it,
-  ///   or displaying relevant feedback to the user.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="getWindow">
-  ///   The function used to get and configure the window.
-  /// </param>
-  /// <param name="onCloseRequested">
-  ///   The message to be dispatched on external close attempts (the Close/X
-  ///   button, Alt+F4, or System Menu -> Close).
-  /// </param>
-  static member subModelWin
-      (createVm,
-       getState: 'model -> WindowState<'subModel>,
-       getWindow: 'model -> Dispatch<'msg> -> Window,
-       ?onCloseRequested: 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelWinT.create
-      (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
-      createVm
-      (fun _ -> id)
-      (fun m d -> getWindow m d)
-      (fun _ -> onCloseRequested |> ValueOption.ofOption)
-
-
-  /// <summary>
-  ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
-  ///   to show/hide/close a new window that will have the specified bindings as
-  ///   its <c>DataContext</c>.
-  ///
-  ///   You do not need to set the <c>DataContext</c> yourself (neither in code
-  ///   nor XAML).
-  ///
-  ///   The window can only be closed/hidden by changing the return value of
-  ///   <paramref name="getState" />, and can not be directly closed by the
-  ///   user. External close attempts (the Close/X button, Alt+F4, or System
-  ///   Menu -> Close) will cause the message specified by
-  ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
-  ///   <paramref name="onCloseRequested" /> and react to this in a manner that
-  ///   will not confuse a user trying to close the window (e.g. by closing it,
-  ///   or displaying relevant feedback to the user.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getState">Gets the window state and a sub-model.</param>
-  /// <param name="getWindow">
-  ///   The function used to get and configure the window.
-  /// </param>
-  /// <param name="onCloseRequested">
-  ///   The message to be dispatched on external close attempts (the Close/X
-  ///   button, Alt+F4, or System Menu -> Close).
-  /// </param>
-  static member subModelWin
-      (createVm,
-       getState: 'model -> WindowState<'subModel>,
-       getWindow: unit -> Window,
-       ?onCloseRequested: 'msg)
-      : string -> Binding<'model, 'msg, 'a> =
-    BindingT.subModelWin(
-      createVm,
-      getState,
       (fun _ _ -> getWindow ()),
       ?onCloseRequested = onCloseRequested
     )
@@ -2290,6 +2225,333 @@ type BindingT private () =
 module ExtensionsT =
 
   type BindingT with
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new content dialog that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The content dialog can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getDialog">
+    ///   The function used to get and configure the content dialog.
+    /// </param>
+  /// <param name="onCloseRequested">
+  ///   The message to be dispatched on the dialog buttons press.
+  /// </param>
+    static member subModelDialog
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         toMsg: 'subMsg -> 'msg,
+         getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelDialogT.create
+        (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+        createVm
+        (fun _ -> toMsg)
+        (fun m d -> getDialog m d)
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new content dialog that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The content dialog can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getDialog">
+    ///   The function used to get and configure the content dialog.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on the dialog buttons press.
+    /// </param>
+    static member subModelDialog
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         toMsg: 'subMsg -> 'msg,
+         getDialog: unit -> ContentDialog,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelDialogT.create
+        getState
+        createVm
+        (fun _ -> toMsg)
+        (fun _ _ -> getDialog())
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new content dialog that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The content dialog can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+    /// <param name="getDialog">
+    ///   The function used to get and configure the content dialog.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on the dialog buttons press.
+    /// </param>
+    static member subModelDialog
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         getDialog: 'model -> Dispatch<'msg> -> ContentDialog,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelDialogT.create
+        (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+        createVm
+        (fun _ -> id)
+        (fun m d -> getDialog m d)
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new content dialog that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The content dialog can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the content dialog (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the content dialog state and a sub-model.</param>
+    /// <param name="getDialog">
+    ///   The function used to get and configure the content dialog.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    static member subModelDialog
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         getDialog: unit -> ContentDialog,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      BindingT.subModelDialog(
+        createVm,
+        getState,
+        (fun _ _ -> getDialog ()),
+        ?onCloseRequested = onCloseRequested
+      )
+
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The window can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getWindow">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    static member subModelWin
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         toMsg: 'subMsg -> 'msg,
+         getWindow: 'model -> Dispatch<'msg> -> Window,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelWinT.create
+        (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+        createVm
+        (fun _ -> toMsg)
+        (fun m d -> getWindow m d)
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The window can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="toMsg">
+    ///   Converts the messages used in the bindings to parent model messages
+    ///   (e.g. a parent message union case that wraps the child message type).
+    /// </param>
+    /// <param name="getWindow">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    static member subModelWin
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         toMsg: 'subMsg -> 'msg,
+         getWindow: unit -> Window,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelWinT.create
+        getState
+        createVm
+        (fun _ -> toMsg)
+        (fun _ _ -> getWindow())
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The window can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="getWindow">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    static member subModelWin
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         getWindow: 'model -> Dispatch<'msg> -> Window,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      Binding.SubModelWinT.create
+        (fun m -> getState m |> WindowState.map (fun sub -> (m, sub)))
+        createVm
+        (fun _ -> id)
+        (fun m d -> getWindow m d)
+        (fun _ -> onCloseRequested |> ValueOption.ofOption)
+
+    /// <summary>
+    ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
+    ///   to show/close a new window that will have the specified bindings as
+    ///   its <c>DataContext</c>.
+    ///
+    ///   You do not need to set the <c>DataContext</c> yourself (neither in code
+    ///   nor XAML).
+    ///
+    ///   The window can only be closed by changing the return value of
+    ///   <paramref name="getState" />, and can not be directly closed by the
+    ///   user. External close attempts (the Close/X button, Alt+F4, or System
+    ///   Menu -> Close) will cause the message specified by
+    ///   <paramref name="onCloseRequested" /> to be dispatched. You should supply
+    ///   <paramref name="onCloseRequested" /> and react to this in a manner that
+    ///   will not confuse a user trying to close the window (e.g. by closing it,
+    ///   or displaying relevant feedback to the user.)
+    /// </summary>
+    /// <param name="createVm">Creates the view model for the sub-model.</param>
+    /// <param name="getState">Gets the window state and a sub-model.</param>
+    /// <param name="getWindow">
+    ///   The function used to get and configure the window.
+    /// </param>
+    /// <param name="onCloseRequested">
+    ///   The message to be dispatched on external close attempts (the Close/X
+    ///   button, Alt+F4, or System Menu -> Close).
+    /// </param>
+    static member subModelWin
+        (createVm,
+         getState: 'model -> WindowState<'subModel>,
+         getWindow: unit -> Window,
+         ?onCloseRequested: 'msg)
+        : string -> Binding<'model, 'msg, 'a> =
+      BindingT.subModelWin(
+        createVm,
+        getState,
+        (fun _ _ -> getWindow ()),
+        ?onCloseRequested = onCloseRequested
+      )
+
 
     /// <summary>Creates a two-way binding.</summary>
     /// <param name="get">Gets the value from the model.</param>

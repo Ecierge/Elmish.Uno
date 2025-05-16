@@ -1,7 +1,6 @@
-﻿module Elmish.Uno.Samples.NewWindow.Window2Module
+﻿module Elmish.Uno.Samples.NewDialog.Dialog2Module
 
 open Elmish.Uno
-
 
 [<RequireQualifiedAccess>]
 type ConfirmState =
@@ -9,12 +8,12 @@ type ConfirmState =
   | Cancel
   | Close
 
-type Window2 =
+type Dialog2 =
   { Input: string
     IsChecked: bool
     ConfirmState: ConfirmState option }
 
-type Window2Msg =
+type Dialog2Msg =
   | SetInput of string
   | SetChecked of bool
   | Submit
@@ -22,11 +21,11 @@ type Window2Msg =
   | Close
 
 [<RequireQualifiedAccess>]
-type Window2OutMsg =
+type Dialog2OutMsg =
   | Close
 
 
-module Window2 =
+module Dialog2 =
   module Input =
     let get m = m.Input
     let set v m = { m with Input = v }
@@ -56,7 +55,7 @@ module Window2 =
 
   let private confirmStateToMsg confirmState msg m =
     if m.ConfirmState = Some confirmState
-    then InOut.Out Window2OutMsg.Close
+    then InOut.Out Dialog2OutMsg.Close
     else InOut.In msg
 
   let bindings =
@@ -74,4 +73,4 @@ module Window2 =
     inBindings @ inOutBindings
 
 [<CompiledName("DesignInstance")>]
-let designInstance = ViewModel.designInstance Window2.init (Window2.bindings)
+let designInstance = ViewModel.designInstance Dialog2.init (Dialog2.bindings)
