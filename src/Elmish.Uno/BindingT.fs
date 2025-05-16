@@ -1446,14 +1446,14 @@ type BindingT private () =
   ///   Converts the messages used in the bindings to parent model messages
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
-  static member subModel
+  static member subModelWithModel
       (createVm,
        getSubModel: 'model -> 'subModel,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toBindingModelWithModel: 'model * 'subModel -> 'bindingModel,
        toMsg: 'bindingMsg -> 'msg)
       : string -> Binding<'model, 'msg, 'a> =
     Binding.SubModelT.req createVm
-    >> Binding.mapModel (fun m -> toBindingModel (m, getSubModel m))
+    >> Binding.mapModel (fun m -> toBindingModelWithModel (m, getSubModel m))
     >> Binding.mapMsg toMsg
 
   /// <summary>
@@ -1488,7 +1488,7 @@ type BindingT private () =
   ///   Converts the messages used in the bindings to parent model messages
   ///   (e.g. a parent message union case that wraps the child message type).
   /// </param>
-  static member subModel
+  static member subModelWithModel
       (createVm,
        getSubModel: 'model -> 'subModel,
        toMsg: 'subMsg -> 'msg)
@@ -1527,6 +1527,174 @@ type BindingT private () =
     Binding.SubModelT.req createVm
     >> Binding.mapModel getSubModel
 
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (createVm,
+       getSubModel: 'model -> 'subModel voption,
+       toMsg: 'subMsg -> 'msg,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.vopt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m)
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (createVm,
+       getSubModel: 'model -> 'subModel option,
+       toMsg: 'subMsg -> 'msg,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.opt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m)
+    >> Binding.mapMsg toMsg
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings,
+  ///   and may not exist. If it does not exist, bindings to this model will
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (createVm,
+       getSubModel: 'model -> 'subModel voption,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.vopt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings,
+  ///   and may not exist. If it does not exist, bindings to this model will
+  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
+  ///   which case the last non-<c>null</c> model will be returned. You
+  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
+  ///   similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOpt
+      (createVm,
+       getSubModel: 'model -> 'subModel option,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+    Binding.SubModelT.opt createVm
+    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> Binding.mapModel (fun m -> getSubModel m)
+
+
+  /// <summary>
+  ///   Creates a binding to a sub-model/component that has its own bindings and
+  ///   message type, and may not exist. If it does not exist, bindings to this
+  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
+  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
+  ///   returned. You typically bind this to the <c>DataContext</c> of a
+  ///   <c>UserControl</c> or similar.
+  ///
+  ///   The 'sticky' part is useful if you want to e.g. animate away a
+  ///   <c>UserControl</c> when the model is missing, but don't want the data
+  ///   used by that control to be cleared once the animation starts. (The
+  ///   animation must be triggered using another binding since this will never
+  ///   return <c>null</c>.)
+  /// </summary>
+  /// <param name="createVm">Creates the view model for the sub-model.</param>
+  /// <param name="getSubModel">Gets the sub-model from the model.</param>
+  /// <param name="toBindingModel">
+  ///   Converts the models to the model used by the bindings.
+  /// </param>
+  /// <param name="toMsg">
+  ///   Converts the messages used in the bindings to parent model messages
+  ///   (e.g. a parent message union case that wraps the child message type).
+  /// </param>
+  /// <param name="sticky">
+  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
+  ///   model will be returned instead of <c>null</c>.
+  /// </param>
+  static member subModelOptWithModel
+      (createVm,
+       getSubModel: 'model -> 'subModel option,
+       toBindingModel: 'model * 'subModel -> 'bindingModel,
+       toMsg: 'bindingMsg -> 'msg,
+       ?sticky: bool)
+      : string -> Binding<'model, 'msg, 'a> =
+     Binding.SubModelT.opt createVm
+     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> Option.isSome previous && Option.isNone next) else id
+     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModel (m, sub)))
+     >> Binding.mapMsg toMsg
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
@@ -1567,46 +1735,6 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> toBindingModel (m, sub)))
     >> Binding.mapMsg toMsg
 
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toBindingModel">
-  ///   Converts the models to the model used by the bindings.
-  /// </param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOptWithModel
-      (createVm,
-       getSubModel: 'model -> 'subModel option,
-       toBindingModel: 'model * 'subModel -> 'bindingModel,
-       toMsg: 'bindingMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.opt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModel (m, sub)))
-    >> Binding.mapMsg toMsg
-
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
@@ -1642,43 +1770,6 @@ type BindingT private () =
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       toMsg: 'subMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
-
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
@@ -1713,43 +1804,6 @@ type BindingT private () =
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings and
-  ///   message type, and may not exist. If it does not exist, bindings to this
-  ///   model will return <c>null</c> unless <paramref name="sticky" /> is
-  ///   <c>true</c>, in which case the last non-<c>null</c> model will be
-  ///   returned. You typically bind this to the <c>DataContext</c> of a
-  ///   <c>UserControl</c> or similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="toMsg">
-  ///   Converts the messages used in the bindings to parent model messages
-  ///   (e.g. a parent message union case that wraps the child message type).
-  /// </param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel option,
-       toMsg: 'subMsg -> 'msg,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.opt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-    >> Binding.mapMsg toMsg
-
 
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings,
@@ -1801,36 +1855,6 @@ type BindingT private () =
   ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
   ///   model will be returned instead of <c>null</c>.
   /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel voption,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.vopt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
   static member subModelOptWithModel
       (createVm,
        getSubModel: 'model -> 'subModel option,
@@ -1839,37 +1863,6 @@ type BindingT private () =
     Binding.SubModelT.opt createVm
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
-
-
-  /// <summary>
-  ///   Creates a binding to a sub-model/component that has its own bindings,
-  ///   and may not exist. If it does not exist, bindings to this model will
-  ///   return <c>null</c> unless <paramref name="sticky" /> is <c>true</c>, in
-  ///   which case the last non-<c>null</c> model will be returned. You
-  ///   typically bind this to the <c>DataContext</c> of a <c>UserControl</c> or
-  ///   similar.
-  ///
-  ///   The 'sticky' part is useful if you want to e.g. animate away a
-  ///   <c>UserControl</c> when the model is missing, but don't want the data
-  ///   used by that control to be cleared once the animation starts. (The
-  ///   animation must be triggered using another binding since this will never
-  ///   return <c>null</c>.)
-  /// </summary>
-  /// <param name="createVm">Creates the view model for the sub-model.</param>
-  /// <param name="getSubModel">Gets the sub-model from the model.</param>
-  /// <param name="sticky">
-  ///   If <c>true</c>, when the model is missing, the last non-<c>null</c>
-  ///   model will be returned instead of <c>null</c>.
-  /// </param>
-  static member subModelOpt
-      (createVm,
-       getSubModel: 'model -> 'subModel option,
-       ?sticky: bool)
-      : string -> Binding<'model, 'msg, 'a> =
-    Binding.SubModelT.opt createVm
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
-    >> Binding.mapModel (fun m -> getSubModel m)
-
 
   /// <summary>
   ///   Like <see cref="subModelOpt" />, but uses the <c>WindowState</c> wrapper
