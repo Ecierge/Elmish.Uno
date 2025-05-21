@@ -24,7 +24,7 @@ module WindowState =
       WindowState.Visible
 
   let toOption  state = state |> cata None Some
-  let toVOption state = state |> cata ValueNone ValueSome
+  let toValueOption state = state |> cata ValueNone ValueSome
 
   /// Converts None to WindowState.Closed, and Some(x) to
   /// WindowState.Visible(x).
@@ -35,7 +35,7 @@ module WindowState =
 
   /// Converts ValueNone to WindowState.Closed, and ValueSome(x) to
   /// WindowState.Visible(x).
-  let ofVOption (model: 'model voption) =
+  let ofValueOption (model: 'model voption) =
     match model with
     | ValueSome a -> a |> WindowState.Visible
     | ValueNone   ->      WindowState.Closed

@@ -878,12 +878,12 @@ type [<Struct>] Get<'t>(nameChain: string) =
     | SubModel { GetVm = getvm } -> getvm() |> ValueOption.toNull |> Result.mapError GetError.ToNullError
     | SubModelDialog { GetVmWinState = getvm } ->
         getvm()
-        |> WindowState.toVOption
+        |> WindowState.toValueOption
         |> ValueOption.toNull
         |> Result.mapError GetError.ToNullError
     | SubModelWin { GetVmWinState = getvm } ->
         getvm()
-        |> WindowState.toVOption
+        |> WindowState.toValueOption
         |> ValueOption.toNull
         |> Result.mapError GetError.ToNullError
     | SubModelSeqUnkeyed { Vms = vms }
