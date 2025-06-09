@@ -14,7 +14,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <WinAppSdkVersion>1.7.250310001</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
+    <WinAppSdkVersion>1.7.250513003</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
     <WindowsSdkPackageVersion>10.0.26100.57</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
   </PropertyGroup>
 </Project>
