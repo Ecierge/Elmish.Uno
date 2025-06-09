@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(DotNetVersion)-windows10.0.26100;$(DotNetVersion)</TargetFrameworks>
+    <TargetFrameworks>
+      $(DotNetVersion);
+      $(DotNetVersion)-windows10.0.26100
+    </TargetFrameworks>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
