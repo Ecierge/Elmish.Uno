@@ -34,6 +34,7 @@ type ViewModelArgs<'model, 'msg> =
       loggingArgs: LoggingViewModelArgs }
   with
     member this.InitialModel = this.initialModel
+    member this.Logger = this.loggingArgs.log
 
 module ViewModelArgs =
   let internal create initialModel dispatch nameChain loggingArgs =
