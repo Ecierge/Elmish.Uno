@@ -66,7 +66,8 @@ module App =
       snd,
       Dialog2.mapInOutMsg,
       Dialog2.bindings,
-      createDialog2)
+      createDialog2,
+      Dialog2Close)
   ]
 
 open App
