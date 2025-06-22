@@ -33,6 +33,9 @@
     <Compile Include="NewWindow.AutoOpen.fs" DependentUpon="NewWindow.fs" />
     <Compile Include="NewWindow.Window1.fs" DependentUpon="NewWindow.fs" />
     <Compile Include="NewWindow.Window2.fs" DependentUpon="NewWindow.fs" />
+    <Compile Include="NewDialogStatic.Dialog2.fs" />
+    <Compile Include="NewDialogStatic.Dialog1.fs" />
+    <Compile Include="NewDialogStatic.fs" />
     <Compile Include="NewWindow.fs" />
   </ItemGroup>
 

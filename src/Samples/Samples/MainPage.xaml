@@ -46,6 +46,7 @@
       <samples:SampleItem Title="FileDialogsCmdMsg" />
       <samples:SampleItem Title="EventBindingsAndBehaviors" />
       <samples:SampleItem Title="NewDialog" />
+      <samples:SampleItem Title="NewDialogStatic" />
       <samples:SampleItem Title="NewWindow" />
 
       <!-- Shell implements INavigate which does not support parameter -->
