@@ -77,7 +77,9 @@ module Helpers2 =
     dlg.DispatcherQueue.TryEnqueue(fun () ->
       dlg.DataContext <- dataContext
       dlg.add_Closing(fun d args ->
-        args.Cancel <- preventClose.Value
+        match dlg.CloseButtonCommand, dlg.PrimaryButtonCommand, dlg.SecondaryButtonCommand with
+        | null, null, null -> ()
+        | _ -> args.Cancel <- preventClose.Value
         getCurrentModel () |> onCloseRequested |> ValueOption.iter dispatch
       )
       dlg.ShowAsync() |> ignore
