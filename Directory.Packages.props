@@ -28,7 +28,7 @@
     <PackageVersion Include="CommunityToolkit.WinUI.Extensions" Version="$(CommunityToolkitVersion)" />
     <PackageVersion Include="CommunityToolkit.WinUI.Helpers" Version="$(CommunityToolkitVersion)" />
     <PackageVersion Include="CommunityToolkit.WinUI.Triggers" Version="$(CommunityToolkitVersion)" />
-    <PackageVersion Include="Elmish" Version="4.3.0" />
+    <PackageVersion Include="Elmish" Version="5.0.2" />
     <PackageVersion Include="Elmish.Uno" Version="1.0.0-ci" />
     <PackageVersion Include="FSharp.Collections.Immutable" Version="2.0.0-ci-853395216" />
     <PackageVersion Include="FSharp.Control.FusionTasks" Version="2.6.0" />
@@ -41,7 +41,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.6" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
