@@ -8,26 +8,23 @@ open Microsoft.UI.Xaml
 open Elmish
 
 
-type UnoProgram<'arg, 'model, 'msg, 'viewModel> =
+type UnoProgram<'arg, 'model, 'msg> =
   internal {
     ElmishProgram: Program<'arg, 'model, 'msg, unit>
-    CreateViewModel: ViewModelArgs<'model,'msg> -> 'viewModel
-    UpdateViewModel: 'viewModel * 'model -> unit
+    CreateViewModel: ViewModelArgs<'model,'msg> -> IViewModel<'model, 'msg>
+    UpdateViewModel: IViewModel<'model, 'msg> * 'model -> unit
     LoggerFactory: ILoggerFactory
     ErrorHandler: string -> exn -> unit
     /// Only log calls that take at least this many milliseconds. Default 1.
     PerformanceLogThreshold: int
   }
 
-type UnoProgram<'model, 'msg, 'viewModel> = UnoProgram<unit, 'model, 'msg, 'viewModel>
-
-type UnoProgram<'model, 'msg> = UnoProgram<'model, 'msg, obj>
-
+type UnoProgram<'model, 'msg> = UnoProgram<unit, 'model, 'msg>
 
 [<RequireQualifiedAccess>]
 module UnoProgram =
 
-  let private mapVm fOut fIn (p: UnoProgram<'arg, 'model, 'msg, 'viewModel0>) : UnoProgram<'arg, 'model, 'msg, 'viewModel1> =
+  let private mapVm fOut fIn (p: UnoProgram<'arg, 'model, 'msg>) : UnoProgram<'arg, 'model, 'msg> =
     { ElmishProgram = p.ElmishProgram
       CreateViewModel = p.CreateViewModel >> fOut
       UpdateViewModel = (fun (vm, m) -> p.UpdateViewModel(fIn vm, m))
@@ -35,16 +32,16 @@ module UnoProgram =
       ErrorHandler = p.ErrorHandler
       PerformanceLogThreshold = p.PerformanceLogThreshold }
 
-  let private createWithBindings (bindings: Binding<'model,'msg> list) program : UnoProgram<'arg, 'model, 'msg, IViewModel<'model, 'msg>> =
+  let private createWithBindings (bindings: Binding<'model,'msg> list) program : UnoProgram<'arg, 'model, 'msg> =
     { ElmishProgram = program
       CreateViewModel = fun args -> DynamicViewModel<'model,'msg>(args, bindings)
       UpdateViewModel = IViewModel.updateModel
       LoggerFactory = NullLoggerFactory.Instance
       ErrorHandler = fun _ _ -> ()
       PerformanceLogThreshold = 1 }
-    |> mapVm (fun vm -> vm :> _) unbox
+    |> mapVm (fun vm -> vm) unbox
 
-  let private createWithVm (createVm: ViewModelArgs<'model, 'msg> -> #IViewModel<'model, 'msg>) program =
+  let private createWithVm (createVm: ViewModelArgs<'model, 'msg> -> IViewModel<'model, 'msg>) program =
     { ElmishProgram = program
       CreateViewModel = createVm
       UpdateViewModel = IViewModel.updateModel
@@ -74,7 +71,7 @@ module UnoProgram =
   let mkSimpleT
       (init: 'arg -> 'model)
       (update: 'msg  -> 'model -> 'model)
-      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel) =
+      (createVm: ViewModelArgs<'model, 'msg> -> IViewModel<'model, 'msg>) =
     Program.mkSimple init update (fun _ _ -> ())
     |> createWithVm createVm
 
@@ -83,7 +80,7 @@ module UnoProgram =
   let mkProgramT
       (init: 'arg -> 'model * Cmd<'msg>)
       (update: 'msg  -> 'model -> 'model * Cmd<'msg>)
-      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel) =
+      (createVm: ViewModelArgs<'model, 'msg> -> IViewModel<'model, 'msg>) =
     Program.mkProgram init update (fun _ _ -> ())
     |> createWithVm createVm
 
@@ -122,10 +119,10 @@ module UnoProgram =
   [<CompiledName "StartElmishLoop">]
   let startElmishLoopWith
       (element: FrameworkElement)
-      (program: UnoProgram<'arg, 'model, 'msg, 'viewModel>)
+      (program: UnoProgram<'arg, 'model, 'msg>)
       arg
       =
-    let mutable viewModel = None
+    let mutable viewModel = ValueNone
 
     let updateLogger = program.LoggerFactory.CreateLogger("Elmish.Uno.Update")
     let bindingsLogger = program.LoggerFactory.CreateLogger("Elmish.Uno.Bindings")
@@ -192,7 +189,7 @@ module UnoProgram =
       let executeJobThreadPriority = DispatcherQueuePriority.Low
 
       match viewModel with
-      | None -> // no view model yet, so create one
+      | ValueNone -> // no view model yet, so create one
           let args =
             { initialModel = model
               dispatch = dispatchFromViewModel
@@ -203,8 +200,8 @@ module UnoProgram =
                   logPerformance = performanceLogger } }
           let vm = program.CreateViewModel args
           element.DispatcherQueue.TryEnqueue(fun () -> element.DataContext <- vm) |> ignore
-          viewModel <- Some vm
-      | Some vm -> // view model exists, so update
+          viewModel <- ValueSome vm
+      | ValueSome vm -> // view model exists, so update
           match threader with
           | Threaded_UIDispatch uiWaiter -> // We are in the specific dispatch call from the UI thread (see `synchronizedUiDispatch` in `dispatchFromViewModel`)
             updateLogger.LogDebug("SetUIState {i} UIDISPATCH", i);
@@ -274,7 +271,7 @@ module UnoProgram =
   let createVmArgsWith
       (dispatcher: DispatcherQueue)
       (getVm: Func<'viewModel>)
-      (program: UnoProgram<'arg, 'model, 'msg, IViewModel<'model, 'msg>>)
+      (program: UnoProgram<'arg, 'model, 'msg>)
       arg
       =
 
@@ -352,7 +349,7 @@ module UnoProgram =
   let createVmArgs
       dispatcher
       getVm
-      (program: UnoProgram<unit, 'model, 'msg, IViewModel<'model, 'msg>>)
+      (program: UnoProgram<unit, 'model, 'msg>)
       =
     createVmArgsWith dispatcher getVm program ()
 
@@ -403,7 +400,7 @@ module UnoProgram =
   let mkProgramWithCmdMsgT
       (init: unit -> 'model * 'cmdMsg list)
       (update: 'msg -> 'model -> 'model * 'cmdMsg list)
-      (createVm: ViewModelArgs<'model, 'msg> -> 'viewModel)
+      (createVm: ViewModelArgs<'model, 'msg> -> IViewModel<'model, 'msg>)
       (toCmd: 'cmdMsg -> Cmd<'msg>) =
     let convert (model, cmdMsgs) =
       model, (cmdMsgs |> List.map toCmd |> Cmd.batch)
