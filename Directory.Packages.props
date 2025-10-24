@@ -33,7 +33,7 @@
     <PackageVersion Include="FSharp.Collections.Immutable" Version="2.0.0-ci-853395216" />
     <PackageVersion Include="FSharp.Control.FusionTasks" Version="2.6.0" />
     <PackageVersion Include="FSharp.Control.Reactive" Version="5.0.2" />
-    <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.0.0-beta007" />
+    <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.0.1" />
     <PackageVersion Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageVersion Include="FSharp.Core" Version="9.0.202" />
     <PackageVersion Include="Hedgehog" Version="0.13.0" />
@@ -41,7 +41,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(MicrosoftExtensionsVersion)" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
