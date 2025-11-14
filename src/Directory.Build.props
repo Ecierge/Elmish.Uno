@@ -6,7 +6,7 @@
     <Copyright>Copyright © XperiAndri</Copyright>
   </PropertyGroup>
   <PropertyGroup>
-    <DotNetVersion>net8.0</DotNetVersion>
+    <DotNetVersion>net9.0</DotNetVersion>
     <Nullable>enable</Nullable>
     <LangVersion Condition="'$(MSBuildProjectExtension)'=='.csproj'">13.0</LangVersion>
     <LangVersion Condition="'$(MSBuildProjectExtension)'=='.fsproj'">9.0</LangVersion>
@@ -14,8 +14,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <WinAppSdkVersion>1.7.251014001</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
-    <WinAppSdkBuildToolsVersion>10.0.26100.6584</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->
-    <WindowsSdkPackageVersion>10.0.26100.78</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
+    <WinAppSdkVersion>1.8.251106002</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
+    <WinAppSdkBuildToolsVersion>10.0.26100.6901</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->
+    <WindowsSdkPackageVersion>10.0.26100.81</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
   </PropertyGroup>
 </Project>
