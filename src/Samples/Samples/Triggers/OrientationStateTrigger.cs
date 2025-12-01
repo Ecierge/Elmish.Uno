@@ -59,7 +59,7 @@ public class OrientationStateTrigger : StateTriggerBase
             new WeakEventListener<OrientationStateTrigger, SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(this)
             {
                 OnEventAction = (instance, source, eventArgs) => OrientationStateTrigger_OrientationChanged(source, eventArgs),
-                OnDetachAction = weakEventListener => simpleOrientationSensor.OrientationChanged -= weakEventListener.OnEvent
+                OnDetachAction = weakEventListener => simpleOrientationSensor?.OrientationChanged -= weakEventListener.OnEvent
             };
         //DisplayInformation.GetForCurrentView().OrientationChanged += weakEvent.OnEvent;
         //}

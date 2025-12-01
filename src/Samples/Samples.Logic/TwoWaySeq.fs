@@ -23,10 +23,10 @@ let update msg m =
   | TokensChanged e ->
     match e.Action with
     | NotifyCollectionChangedAction.Add ->
-      let newTokens = e.NewItems |> Seq.cast<string> |> List.ofSeq
+      let newTokens = e.NewItems |> nonNull |> Seq.cast<string> |> List.ofSeq
       { m with Tokens = newTokens @ m.Tokens }, Cmd.none
     | NotifyCollectionChangedAction.Remove ->
-      let removedTokens = e.OldItems |> Seq.cast<string> |> List.ofSeq
+      let removedTokens = e.OldItems |> nonNull |> Seq.cast<string> |> List.ofSeq
       { m with Tokens = m.Tokens |> List.filter (fun t -> not (List.contains t removedTokens)) }, Cmd.none
     | _ -> m, Cmd.none
 

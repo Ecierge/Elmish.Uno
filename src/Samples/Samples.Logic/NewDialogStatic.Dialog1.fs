@@ -23,6 +23,7 @@ module Bindings =
     let inputBinding =
         BindingT.twoWay (id, SetInput) (nameof viewModel.Input)
 
+#nowarn 3261 // Nullness warning
 type Dialog1ViewModel(args) =
     inherit ViewModelBase<Dialog1, Dialog1Msg>(args)
 

@@ -4,14 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 
 public class App : Application
 {
-    protected internal Window? MainWindow { get; private set; }
+    protected internal Window MainWindow { get; private set; } = default!;
 
     protected override void OnLaunched([NotNull] LaunchActivatedEventArgs args)
     {
 #if NET6_0_OR_GREATER && WINDOWS && !HAS_UNO
         MainWindow = new Window();
 #else
-        MainWindow = Microsoft.UI.Xaml.Window.Current;
+        MainWindow = Microsoft.UI.Xaml.Window.Current!;
 #endif
 
 #if DEBUG
@@ -37,7 +37,7 @@ public class App : Application
             // When the navigation stack isn't restored navigate to the first page,
             // configuring the new page by passing required information as a navigation
             // parameter
-            shell.Navigate(typeof(MainPage), args.Arguments);
+            shell.Navigate(typeof(MainPage), args.Arguments!);
         }
 
         // Ensure the current window is active

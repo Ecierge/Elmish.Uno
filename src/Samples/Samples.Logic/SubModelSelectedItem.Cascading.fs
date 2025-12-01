@@ -109,13 +109,11 @@ let update msg (m : Model) =
   match msg with
   | FloorsMsg (index, (FloorsMsg.SelectFloor item)) -> m.Select item
   | FloorsMsg (index, FloorsMsg.ClearFloorSelection) -> m.ClearSelection ()
-  | FloorsMsg (index, _) -> m // Use floor program and update model for other local messages
   | AreasMsg (index, (AreasMsg.SelectArea item)) -> { m with SelectionModel = m.SelectionModel.Value.Select item |> ValueSome }
   | AreasMsg (index, AreasMsg.ClearAreaSelection) -> {
       m with
           SelectionModel = m.SelectionModel.Value.ClearSelection () |> ValueSome
     }
-  | AreasMsg (index, _) -> m // Use area program and update model for other local messages
   | RoomsMsg (index, (RoomsMsg.SelectRoom item)) -> {
       m with
           SelectionModel =
@@ -131,7 +129,6 @@ let update msg (m : Model) =
                   SelectionModel = sm.SelectionModel.Value.ClearSelection () |> ValueSome
             })
     }
-  | RoomsMsg (index, _) -> m // Use room program and update model for other local messages
 
 module Floor =
 
@@ -157,6 +154,7 @@ module Floor =
         | ValueNone -> ClearFloorSelection
       BindingT.twoWayOptObj (get, set) (nameof viewModel.SelectedItem)
 
+#nowarn 3261 // Nullness warning
   type SubViewModel (args) =
     inherit ViewModelBase<Model, FloorsMsg> (args)
 
@@ -200,6 +198,7 @@ module Area =
         | ValueNone -> ClearAreaSelection
       BindingT.twoWayOptObj (get, set) (nameof viewModel.SelectedItem)
 
+#nowarn 3261 // Nullness warning
   type SubViewModel (args) =
     inherit ViewModelBase<SubModel1, AreasMsg> (args)
 
@@ -243,6 +242,7 @@ module Room =
         | ValueNone -> ClearRoomSelection
       BindingT.twoWayOptObj (get, set) (nameof viewModel.SelectedItem)
 
+#nowarn 3261 // Nullness warning
   type SubViewModel (args) =
     inherit ViewModelBase<SubModel2, RoomsMsg> (args)
 
@@ -270,11 +270,13 @@ module Bindings =
 
     let createViewModel (args : ViewModelArgs<obj, obj>) : IViewModel<obj, obj> =
       let modelType = args.InitialModel.GetType ()
-      if modelType = typeof<Model> then
+      if Type.(=) (modelType, typeof<Model>) then
+#nowarn 40 // Recursive references
         Floor.SubViewModel args
-      elif modelType = typeof<SubModel1> then
+#warnon 40 // Recursive references
+      elif Type.(=) (modelType, typeof<SubModel1>) then
         Area.SubViewModel args
-      elif modelType = typeof<SubModel2> then
+      elif Type.(=) (modelType, typeof<SubModel2>) then
         Room.SubViewModel args
       else
         failwithf "Unknown model type: %A" modelType
@@ -298,6 +300,7 @@ module Bindings =
     |> Binding.addLazy (fun (m1 : Model) (m2 : Model) -> m1.Items = m2.Items)
     |> Binding.mapMsg (fun (i, msg) -> mapVmMsg (i, msg))
 
+#nowarn 3261 // Nullness warning
 type SubModelSelectedItemCascadingViewModel (args) =
   inherit ViewModelBase<Model, Msg> (args)
 

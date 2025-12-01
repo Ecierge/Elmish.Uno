@@ -1,12 +1,14 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿namespace Elmish.Uno.Samples.SubModel;
 
-namespace Elmish.Uno.Samples.SubModel
+using Microsoft.UI.Xaml.Controls;
+
+#pragma warning disable CA1010 // Generic interface should also be implemented
+public partial class CounterWithClock : UserControl
 {
-    public partial class CounterWithClock : UserControl
+    public CounterWithClock()
     {
-        public CounterWithClock()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
+#pragma warning restore CA1010 // Generic interface should also be implemented
+

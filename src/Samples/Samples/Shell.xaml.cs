@@ -16,7 +16,7 @@ using Microsoft.UI.Xaml.Navigation;
 
     public sealed partial class Shell : UserControl, INavigate
     {
-        public object PageTypeName => RootFrame.Content?.GetType().Name;
+        public object PageTypeName => RootFrame.Content!.GetType().Name;
 
         public Shell()
         {
@@ -90,7 +90,7 @@ using Microsoft.UI.Xaml.Navigation;
     }
 
 #if !(WINDOWS)
-    private void OnSystemNavigationManagerBackRequested(object sender, BackRequestedEventArgs e)
+    private void OnSystemNavigationManagerBackRequested(object? sender, BackRequestedEventArgs e)
     {
         OnBackRequested();
         e.Handled = true;

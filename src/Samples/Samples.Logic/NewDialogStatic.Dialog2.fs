@@ -63,16 +63,13 @@ module Bindings =
         BindingT.twoWay (_.IsChecked, SetChecked) (nameof viewModel.IsChecked)
 
     let submitMsgVisibleBinding =
-        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Submit)
-        (nameof viewModel.SubmitMsgVisible)
+        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Submit) (nameof viewModel.SubmitMsgVisible)
 
     let cancelMsgVisibleBinding =
-        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Cancel)
-        (nameof viewModel.CancelMsgVisible)
+        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Cancel) (nameof viewModel.CancelMsgVisible)
 
     let closeMsgVisibleBinding =
-        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Close)
-        (nameof viewModel.CloseMsgVisible)
+        BindingT.oneWay (fun m -> m.ConfirmState = Some ConfirmState.Close) (nameof viewModel.CloseMsgVisible)
 
     let submitCommandBinding =
         BindingT.cmd Submit (nameof viewModel.SubmitCommand)
@@ -83,6 +80,7 @@ module Bindings =
     let closeCommandBinding =
         BindingT.cmd Close (nameof viewModel.CloseCommand)
 
+#nowarn 3261 // Nullness warning
 type Dialog2ViewModel(args) =
     inherit ViewModelBase<Dialog2, Dialog2Msg>(args)
 

@@ -98,16 +98,16 @@ public sealed partial class ValidationControl : ContentControl
     /// </summary>
     public static readonly DependencyProperty ErrorContentStyleProperty =
         DependencyProperty.Register(nameof(ErrorContentStyle), typeof(Style), typeof(ValidationControl),
-            new PropertyMetadata((Style)null,
+            new PropertyMetadata((Style?)null,
                 (d, e) => ((ValidationControl)d).OnErrorContentStyleChanged((Style)e.OldValue, (Style)e.NewValue)));
 
     /// <summary>
     /// Gets or sets the ErrorContentStyle property. This dependency property
     /// contains a Style to apply to content if errors are present.
     /// </summary>
-    public Style ErrorContentStyle
+    public Style? ErrorContentStyle
     {
-        get => (Style)GetValue(ErrorContentStyleProperty);
+        get => (Style?)GetValue(ErrorContentStyleProperty);
         set => SetValue(ErrorContentStyleProperty, value);
     }
 
@@ -131,12 +131,12 @@ public sealed partial class ValidationControl : ContentControl
 
     private Style? lastErrorStyle;
 
-    private void TrySetStyle(Style style)
+    private void TrySetStyle(Style? style)
     {
         var errors = this.Errors as IEnumerable;
         if (errors?.GetEnumerator().MoveNext() ?? false)
         {
-            if (style != null && lastErrorStyle == null)
+            if (style is not null && lastErrorStyle is null)
             {
                 lastErrorStyle = style;
                 this.Resources[lastErrorStyle.TargetType] = lastErrorStyle;
@@ -221,6 +221,6 @@ public sealed partial class ValidationControl : ContentControl
 
     private void OnErrorsChanged(object? obj, DataErrorsChangedEventArgs args)
     {
-        if (args.PropertyName == PropertyName) ResetErrors(PropertyName);
+        if (PropertyName is not null && args.PropertyName == PropertyName) ResetErrors(PropertyName);
     }
 }

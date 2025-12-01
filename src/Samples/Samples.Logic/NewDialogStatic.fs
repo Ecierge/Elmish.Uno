@@ -49,6 +49,7 @@ module Program =
         | Dialog1Show -> { m with Dialog1 = WindowState.Visible (Dialog1.Program.init ()) }, Cmd.none
         | Dialog1Close -> { m with Dialog1 = WindowState.Closed }, Cmd.none
         | Dialog1SetInput s -> { m with Dialog1 = WindowState.set s m.Dialog1 }, Cmd.none
+        | Dialog1Msg _ -> m, Cmd.none
         | Dialog2Show -> { m with Dialog2 = ValueSome (Dialog2.Program.init ()) }, Cmd.none
         | Dialog2Close -> { m with Dialog2 = ValueNone }, Cmd.none
         | Dialog2Msg msg when m.Dialog2.IsSome ->
@@ -75,6 +76,7 @@ module Bindings =
     let dialog2Binding (createDialog : unit -> ContentDialog) =
         BindingT.subModelDialog(Dialog2.Dialog2ViewModel, (_.Dialog2 >> WindowState.ofValueOption), Dialog2Msg, createDialog) (nameof viewModel.Dialog2)
 
+#nowarn 3261 // Nullness warning
 type NewDialogStaticViewModel (createDialog1 : Func<ContentDialog>, createDialog2: Func<ContentDialog>, dispatcher) as vm =
     inherit ViewModelBase<Model, Msg>(
         let program = UnoProgram.mkProgramT Program.init Program.update (fun _ -> vm :> IViewModel<Model, Msg>) in
