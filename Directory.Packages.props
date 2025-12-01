@@ -1,7 +1,7 @@
 ﻿<Project ToolsVersion="15.0">
   <PropertyGroup>
-    <SystemVersion>9.0.0</SystemVersion>
-    <MicrosoftExtensionsVersion>9.0.0</MicrosoftExtensionsVersion>
+    <SystemVersion>10.0.0</SystemVersion>
+    <MicrosoftExtensionsVersion>10.0.0</MicrosoftExtensionsVersion>
     <CommunityToolkitVersion>8.1.240916</CommunityToolkitVersion>
   </PropertyGroup>
   <ItemGroup Label="Microsoft">
@@ -35,7 +35,7 @@
     <PackageVersion Include="FSharp.Control.Reactive" Version="5.0.2" />
     <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.1.0" />
     <PackageVersion Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
-    <PackageVersion Include="FSharp.Core" Version="9.0.303" />
+    <PackageVersion Include="FSharp.Core" Version="10.0.100" />
     <PackageVersion Include="Hedgehog" Version="0.13.0" />
     <PackageVersion Include="Hedgehog.Experimental" Version="0.9.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
@@ -48,8 +48,6 @@
     <PackageVersion Include="Microsoft.Windows.Compatibility" Version="8.0.3" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Private.Uri" Version="4.3.2" />
     <PackageVersion Include="Uno.Extensions.Logging.WebAssembly.Console" Version="1.7.0" />
     <PackageVersion Include="Uno.Resizetizer" Version="$(UnoResizetizerVersion)" />
     <PackageVersion Include="Uno.Toolkit.WinUI" Version="$(UnoToolkitVersion)" />
