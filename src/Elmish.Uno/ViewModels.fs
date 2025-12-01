@@ -75,12 +75,16 @@ type internal ViewModelHelper<'model, 'msg> =
     |> (fun x -> x)
 
   interface INotifyPropertyChanged with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member x.PropertyChanged = x.PropertyChanged.Publish
+#warnon 3261 // Nullness warning
 
   interface INotifyDataErrorInfo with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member x.ErrorsChanged = x.ErrorsChanged.Publish
+#warnon 3261 // Nullness warning
     member x.HasErrors = x.HasErrors
     member x.GetErrors name = x.GetErrors name
 
@@ -262,12 +266,16 @@ type DynamicViewModel<'model, 'msg when 'model : not null and 'msg : not null>
 
 
   interface INotifyPropertyChanged with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member _.PropertyChanged = (helper :> INotifyPropertyChanged).PropertyChanged
+#warnon 3261 // Nullness warning
 
   interface INotifyDataErrorInfo with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member _.ErrorsChanged = (helper :> INotifyDataErrorInfo).ErrorsChanged
+#warnon 3261 // Nullness warning
     member _.HasErrors = (helper :> INotifyDataErrorInfo).HasErrors
     member _.GetErrors name = (helper :> INotifyDataErrorInfo).GetErrors name
 
@@ -470,11 +478,15 @@ type ViewModelBase<'model, 'msg when 'model : not null and 'msg : not null>(args
       ViewModelHelper.raiseEvents hadErrors eventsToRaise helper
 
   interface INotifyPropertyChanged with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member _.PropertyChanged = (helper :> INotifyPropertyChanged).PropertyChanged
+#warnon 3261 // Nullness warning
 
   interface INotifyDataErrorInfo with
+#nowarn 3261 // Nullness warning
     [<CLIEvent>]
     member _.ErrorsChanged = (helper :> INotifyDataErrorInfo).ErrorsChanged
+#warnon 3261 // Nullness warning
     member _.HasErrors = helper.HasErrors
     member _.GetErrors name = helper.GetErrors name

@@ -26,6 +26,8 @@ type internal Command(execute, canExecute) =
 
   interface ICommand with
     [<CLIEvent>]
+#nowarn 3261 // Nullness warning
     member _.CanExecuteChanged = canExecuteChanged.Publish
+#warnon 3261 // nullness warning
     member _.CanExecute p = canExecute p
     member _.Execute p = execute p

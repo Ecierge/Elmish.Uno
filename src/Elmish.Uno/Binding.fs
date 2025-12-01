@@ -153,6 +153,7 @@ module Binding =
       TwoWay.id
       |> createBindingT
 
+#nowarn 3261 // Nullness warning
     /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
@@ -161,6 +162,7 @@ module Binding =
       |> id
       |> mapMsg Option.ofNullable
       |> mapModel Option.toNullable
+#warnon 3261 // Nullness warning
 
 
     /// Creates a two-way binding to an optional value. The binding
@@ -172,6 +174,7 @@ module Binding =
       |> mapMsg ValueOption.ofNullable
       |> mapModel ValueOption.toNullable
 
+#nowarn 3261 // Nullness warning
     /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
@@ -179,6 +182,7 @@ module Binding =
       id<'a>
       >> mapModel (function Some v -> v | None -> Unchecked.defaultof<'a>)
       >> mapMsg (fun v -> if obj.ReferenceEquals(Unchecked.defaultof<'a>, v) then None else Some v)
+#warnon 3261 // Nullness warning
 
     /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
@@ -424,6 +428,7 @@ module Binding =
       >> mapModel ValueOption.box
       >> mapMsg ValueOption.unbox
 
+#nowarn 3261 // Nullness warning
     /// Creates a two-way binding to an optional value. The binding
     /// automatically converts between a missing value in the model and
     /// a <c>null</c> value in the view.
@@ -431,6 +436,7 @@ module Binding =
       id<obj>
       >> mapModel Option.box
       >> mapMsg Option.unbox
+#warnon 3261 // Nullness warning
 
 
   module SubModelSelectedItemT =
@@ -451,9 +457,10 @@ module Binding =
     let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption, 'id> =
       SubModelSelectedItem.create subModelSeqBindingName
       |> createBindingT
-      >> mapModel (ValueOption.map box)
+      >> mapModel (ValueOption.map boxNonNull)
       >> mapMsg (ValueOption.map unbox)
 
+#nowarn 3261 // Nullness warning
     /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
     /// the <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
     /// binding. Automatically converts the dynamically created Elmish.Uno view
@@ -471,6 +478,7 @@ module Binding =
       vopt subModelSeqBindingName
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+#warnon 3261 // Nullness warning
 
 
   module SubModelSelectedItem =
@@ -491,9 +499,10 @@ module Binding =
     let vopt subModelSeqBindingName : string -> Binding<'id voption, 'id voption> =
       SubModelSelectedItem.create subModelSeqBindingName
       |> createBinding
-      >> mapModel (ValueOption.map (box >> nonNull))
+      >> mapModel (ValueOption.map boxNonNull)
       >> mapMsg (ValueOption.map unbox)
 
+#nowarn 3261 // Nullness warning
     /// Creates a two-way binding to a <c>SelectedItem</c>-like property where
     /// the <c>ItemsSource</c>-like property is a <see cref="subModelSeq" />
     /// binding. Automatically converts the dynamically created Elmish.Uno view
@@ -511,6 +520,7 @@ module Binding =
       vopt subModelSeqBindingName
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+#warnon 3261 // Nullness warning
 
 
   module Cmd =
@@ -841,11 +851,13 @@ module Binding =
       >> mapModel (ValueOption.defaultValue -1)
       >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
 
+#nowarn 3261 // Nullness warning
     /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     let opt =
       vopt
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+#warnon 3261 // Nullness warning
 
 
   module SelectedIndex =
@@ -855,11 +867,13 @@ module Binding =
       >> mapModel (ValueOption.defaultValue -1)
       >> mapMsg (fun i -> if i < 0 then ValueNone else ValueSome i)
 
+#nowarn 3261 // Nullness warning
     /// Prebuilt binding intended for use with <code>Selector.SelectedIndex</code>.
     let opt =
       vopt
       >> mapModel ValueOption.ofOption
       >> mapMsg ValueOption.toOption
+#warnon 3261 // Nullness warning
 
 
   module SubModelWin =
@@ -917,6 +931,7 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsg set
 
+#nowarn 3261 // Nullness warning
   /// <summary>
   ///   Creates a binding intended for use with <code>Selector.SelectedIndex</code>.
   /// </summary>
@@ -928,6 +943,7 @@ type Binding private () =
     Binding.SelectedIndex.opt
     >> Binding.mapModel get
     >> Binding.mapMsg set
+#warnon 3261 // Nullness warning
 
 
   /// <summary>Creates a one-way binding.</summary>
@@ -940,6 +956,7 @@ type Binding private () =
     >> Binding.mapModel get
 
 
+#nowarn 3261 // Nullness warning
   /// <summary>
   ///   Creates a one-way binding to an optional value. The binding
   ///   automatically converts between the optional source value and an
@@ -953,6 +970,7 @@ type Binding private () =
     Binding.OneWay.opt<'a, 'msg>
     >> Binding.addLazy (=)
     >> Binding.mapModel get
+#warnon 3261 // Nullness warning
 
 
   /// <summary>
@@ -1265,6 +1283,7 @@ type Binding private () =
     >> Binding.mapMsgWithModel set
 
 
+#nowarn 3261 // Nullness warning
   /// <summary>
   ///   Creates a two-way binding to an optional value. The binding
   ///   automatically converts between the optional source value and an
@@ -1280,6 +1299,8 @@ type Binding private () =
     >> Binding.addLazy (=)
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel setWithModel
+#warnon 3261 // Nullness warning
+
 
   /// <summary>
   ///   Creates a two-way binding to an optional value. The binding
@@ -1467,6 +1488,7 @@ type Binding private () =
     >> Binding.mapMsgWithModel setWithModel
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
+#nowarn 3261 // Nullness warning
   /// <summary>
   ///   Creates a two-way binding to an optional value with validation using
   ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts between
@@ -1554,6 +1576,7 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel setWithModel
     >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+#warnon 3261 // Nullness warning
 
 
   /// <summary>
@@ -2302,7 +2325,6 @@ type Binding private () =
     >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
     >> Binding.mapModel (fun m -> getSubModel m |> ValueOption.map (fun sub -> (m, sub)))
 
-
   /// <summary>
   ///   Creates a binding to a sub-model/component that has its own bindings and
   ///   message type, and may not exist. If it does not exist, bindings to this
@@ -2338,7 +2360,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.opt bindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2377,7 +2403,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.optLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> toBindingModelWithModel (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2413,7 +2443,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.opt bindingsWithModel
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2448,7 +2482,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.optLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
     >> Binding.mapMsg toMsg
 
@@ -2479,7 +2517,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.opt bindingsWithModel
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
 
   /// <summary>
@@ -2508,7 +2550,11 @@ type Binding private () =
        ?sticky: bool)
       : string -> Binding<'model, 'msg> =
     Binding.SubModel.optLazy getBindings
-    >> if (defaultArg sticky false) then Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone) else id
+    >> if (defaultArg sticky false) then
+#nowarn 3261 // Nullness warning
+          Binding.addLazy (fun previous next -> previous.IsSome && next.IsNone)
+#warnon 3261 // Nullness warning
+       else id
     >> Binding.mapModel (fun m -> getSubModel m |> Option.map (fun sub -> (m, sub)))
 
 
@@ -3489,6 +3535,7 @@ type Binding private () =
     >> Binding.mapMsgWithModel setWithModel
     >> Binding.addCaching
 
+#nowarn 3261 // Nullness warning
   /// <summary>
   ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
   ///   the
@@ -3525,6 +3572,7 @@ type Binding private () =
     >> Binding.mapModel get
     >> Binding.mapMsgWithModel setWithModel
     >> Binding.addCaching
+#warnon 3261 // Nullness warning
 
 
 // Some members are implemented as extensions to help overload resolution
@@ -3546,6 +3594,7 @@ module Extensions =
       >> Binding.mapMsg set
 
 
+#nowarn 3261 // Nullness warning
     /// <summary>
     ///   Creates a two-way binding to an optional value. The binding
     ///   automatically converts between the optional source value and an
@@ -3561,6 +3610,7 @@ module Extensions =
       >> Binding.addLazy (=)
       >> Binding.mapModel get
       >> Binding.mapMsg set
+#warnon 3261 // Nullness warning
 
     /// <summary>
     ///   Creates a two-way binding to an optional value. The binding
@@ -3748,6 +3798,7 @@ module Extensions =
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
 
+#nowarn 3261 // Nullness warning
     /// <summary>
     ///   Creates a two-way binding to an optional value with validation using
     ///   <c>INotifyDataErrorInfo</c>. The binding automatically converts
@@ -3835,6 +3886,7 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addValidation (validate >> ValueOption.ofError >> ValueOption.toList)
+#warnon 3261 // Nullness warning
 
 
     /// <summary>
@@ -4635,6 +4687,7 @@ module Extensions =
       >> Binding.addCaching
 
 
+#nowarn 3261 // Nullness warning
     /// <summary>
     ///   Creates a two-way binding to a <c>SelectedItem</c>-like property where
     ///   the
@@ -4672,3 +4725,4 @@ module Extensions =
       >> Binding.mapModel get
       >> Binding.mapMsg set
       >> Binding.addCaching
+#warnon 3261 // Nullness warning

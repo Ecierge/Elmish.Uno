@@ -75,15 +75,16 @@ module ValueOption =
     | ValueCannotBeNull of string
 
   let ofNull<'T> (x: 'T) =
-    match box x with
-    | null -> ValueNone
-    | _ -> ValueSome x
+    if obj.ReferenceEquals (x, null) then
+      ValueNone
+    else
+      ValueSome x
 
   let toNull<'T> = function
     | ValueSome x -> Ok x
     | ValueNone ->
       let default' = Unchecked.defaultof<'T>
-      if box default' = null then
+      if obj.ReferenceEquals (default', null) then
         default' |> Ok
       else
         typeof<'T>.Name |> ToNullError.ValueCannotBeNull |> Error

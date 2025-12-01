@@ -264,7 +264,7 @@ module UnoProgram =
   [<CompiledName "StartElmishLoop">]
   let startElmishLoop
       (element: FrameworkElement)
-      (program: UnoProgram<'model, 'msg, 'viewModel>)
+      (program: UnoProgram<'model, 'msg>)
       = startElmishLoopWith element program ()
 
   [<CompiledName "CreateVmArgs">]

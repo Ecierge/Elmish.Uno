@@ -546,7 +546,7 @@ module BindingData =
 
   let addCaching b = b |> CachingData
   let addValidation validate b = { BindingData = b; Validate = validate } |> ValidationData
-  let private boxNonNull o = o :> obj
+  let internal boxNonNull o = o :> obj
   let addLazy (equals : 'model -> 'model -> bool) b =
     {
       BindingData = b |> mapModel unbox |> mapMsg boxNonNull
@@ -581,15 +581,29 @@ module BindingData =
     binding |> mapModel f
 
 
-  module Option =
+  module internal Option =
 
-    let box ma = ma |> Option.map box |> Option.toObj
-    let unbox obj = obj |> Option.ofObj |> Option.map unbox
+    let box opt =
+      match opt with
+      | Some a -> a :> obj
+      | None -> Unchecked.defaultof<obj>
+    let unbox o =
+      if obj.ReferenceEquals (o, null) then
+        None
+      else
+        o :> obj :?> 'T |> Some
 
-  module ValueOption =
+  module internal ValueOption =
 
-    let box ma = ma |> ValueOption.map box |> ValueOption.toObj
-    let unbox obj = obj |> ValueOption.ofObj |> ValueOption.map unbox
+    let box opt =
+      match opt with
+      | ValueSome a -> a :> obj
+      | ValueNone -> Unchecked.defaultof<obj>
+    let unbox o =
+      if obj.ReferenceEquals (o, null) then
+        ValueNone
+      else
+        o :> obj :?> 'T |> ValueSome
 
 
   module OneWay =
@@ -867,7 +881,7 @@ module BindingData =
         (mUpdateViewModel "updateViewModel")
         (mToMsg "toMsg")
 
-  
+
   module SubModelDialog =
 
     let mapMinorTypes

@@ -894,13 +894,13 @@ type [<Struct>] Get<'t>(nameChain: string) =
         let toResult nameChain binding viewModel =
             match viewModel with
             | ValueNone -> ValueNone |> Ok // deselecting successful
-            | ValueSome (id, mVm) ->
+            | ValueSome (itemId, mVm) ->
                 match mVm with
                 | Some vm -> vm |> ValueSome |> Ok // selecting successful
                 | None -> // selecting failed
                     { NameChain = nameChain
                       SubModelSeqBindingName = binding.SubModelSeqBindingName
-                      Id = id.ToString() |> nonNull }
+                      Id = itemId |> nonNull |> string }
                     |> GetError.SubModelSelectedItem
                     |> Error
         b.TypedGet model
