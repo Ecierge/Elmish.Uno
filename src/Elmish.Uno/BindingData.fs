@@ -620,7 +620,7 @@ module BindingData =
         ItemEquals = fun a1 a2 -> d.ItemEquals (inMapA a1) (inMapA a2)
       }
 
-    let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) unbox
+    let boxMinorTypes d = d |> mapMinorTypes box (fun id -> id :> obj) LanguagePrimitives.IntrinsicFunctions.UnboxFast
 
     let create itemEquals getId incrementalLoader =
       {

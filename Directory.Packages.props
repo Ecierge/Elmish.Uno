@@ -33,7 +33,7 @@
     <PackageVersion Include="FSharp.Collections.Immutable" Version="2.0.0-ci-4000372498" />
     <PackageVersion Include="FSharp.Control.FusionTasks" Version="2.6.0" />
     <PackageVersion Include="FSharp.Control.Reactive" Version="5.0.2" />
-    <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.0.1" />
+    <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.1.0" />
     <PackageVersion Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageVersion Include="FSharp.Core" Version="9.0.303" />
     <PackageVersion Include="Hedgehog" Version="0.13.0" />
