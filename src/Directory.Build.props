@@ -12,6 +12,7 @@
     <LangVersion Condition="'$(MSBuildProjectExtension)'=='.fsproj'">10.0</LangVersion>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <EnableCoreMrtTooling Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(OutputType)' != 'WinExe' AND '$(OutputType)' != 'Exe'">true</EnableCoreMrtTooling>
   </PropertyGroup>
   <PropertyGroup>
     <WinAppSdkVersion>1.8.251106002</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
