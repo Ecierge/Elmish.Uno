@@ -1,10 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Choose>
+    <When Condition=" '$(OS)' == 'Windows_NT' ">
+      <PropertyGroup>
+        <TargetFrameworks>$(DotNetVersion);$(DotNetVersion)-windows10.0.26100</TargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <TargetFramework>$(DotNetVersion)</TargetFramework>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
   <PropertyGroup>
-    <TargetFrameworks>
-      $(DotNetVersion);
-      $(DotNetVersion)-windows10.0.26100
-    </TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
