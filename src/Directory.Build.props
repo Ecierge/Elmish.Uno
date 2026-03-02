@@ -15,8 +15,8 @@
     <EnableCoreMrtTooling Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(OutputType)' != 'WinExe' AND '$(OutputType)' != 'Exe'">true</EnableCoreMrtTooling>
   </PropertyGroup>
   <PropertyGroup>
-    <WinAppSdkVersion>1.8.251106002</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
+    <WinAppSdkVersion>1.8.260209005</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
     <WinAppSdkBuildToolsVersion>10.0.28000.1-RTM</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->
-    <WindowsSdkPackageVersion>10.0.26100.81</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
+    <WindowsSdkPackageVersion>10.0.26100.84</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
   </PropertyGroup>
 </Project>
