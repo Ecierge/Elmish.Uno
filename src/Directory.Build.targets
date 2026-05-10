@@ -1,2 +1,41 @@
-<Project>
+﻿<Project>
+
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)'=='.fsproj'">
+    <UnoDisableGenerateGlobalUsingsMock>true</UnoDisableGenerateGlobalUsingsMock>
+    <UnoDisableVSTargetFrameworksRewrite>true</UnoDisableVSTargetFrameworksRewrite>
+    <UnoGenerateHotReloadInfo>false</UnoGenerateHotReloadInfo>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>false</RunAnalyzersDuringLiveAnalysis>
+  </PropertyGroup>
+
+  <!--
+    F# library projects contain no XAML or MRT resources.
+    GetMrtPackagingOutputs is called transitively by the WinUI head on every ProjectReference.
+    Overriding it here makes it a no-op, skipping MRT/PRI packaging overhead on all F# libraries.
+  -->
+  <Target Name="GetMrtPackagingOutputs"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'"
+          Returns="@(PackagingOutputs)" />
+
+  <Target Name="AddPriPayloadFilesToCopyToOutputDirectoryItems"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+
+  <Target Name="_GenerateProjectPriFileCore"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+  <Target Name="_GenerateProjectPriConfigurationFiles"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+
+  <!--
+    F# library projects do not need deps.json generation during build.
+    The head project generates the final deps.json that includes all transitive dependencies.
+    _UnoEmbeddedResourcesInjection: property alone is insufficient — SDK overwrites it later.
+    Override the target directly to guarantee no-op on F# libraries.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)'=='.fsproj'">
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <Target Name="_UnoEmbeddedResourcesInjection"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+
 </Project>
