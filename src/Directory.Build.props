@@ -14,6 +14,21 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnableCoreMrtTooling Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(OutputType)' != 'WinExe' AND '$(OutputType)' != 'Exe'">true</EnableCoreMrtTooling>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <_IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</_IsLinux>
+    <_SolutionConfigPath>$([MSBuild]::GetPathOfFileAbove('solution-config.props', '$(MSBuildThisFileDirectory)'))</_SolutionConfigPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_IsLinux)' == 'True' AND '$(_SolutionConfigPath)' == ''">
+    <UnoEffectiveTargetFrameworks>net10.0</UnoEffectiveTargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_IsLinux)' != 'True' AND '$(OverrideTargetFramework)' != ''">
+    <UnoEffectiveTargetFrameworks>$(OverrideTargetFramework)</UnoEffectiveTargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_IsLinux)' == 'True' AND '$(_SolutionConfigPath)' != '' AND '$(OverrideTargetFramework)' != ''">
+    <UnoEffectiveTargetFrameworks>$(OverrideTargetFramework)</UnoEffectiveTargetFrameworks>
+  </PropertyGroup>
+
   <PropertyGroup>
     <WinAppSdkVersion>1.8.260209005</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
     <WinAppSdkBuildToolsVersion>10.0.28000.1-RTM</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->

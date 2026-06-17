@@ -7,7 +7,7 @@
       $(DotNetVersion)-ios;
       $(DotNetVersion)-maccatalyst
     </TargetFrameworks>
-    <TargetFrameworks Condition="'$(OverrideTargetFramework)'!=''">$(OverrideTargetFramework)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(UnoEffectiveTargetFrameworks)'!=''">$(UnoEffectiveTargetFrameworks)</TargetFrameworks>
 
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
     <GenerateLibraryLayout>true</GenerateLibraryLayout>

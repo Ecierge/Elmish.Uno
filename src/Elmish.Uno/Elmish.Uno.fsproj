@@ -4,6 +4,7 @@
       $(DotNetVersion);
       $(DotNetVersion)-windows10.0.26100
     </TargetFrameworks>
+    <TargetFrameworks Condition=" '$(UnoEffectiveTargetFrameworks)' != '' ">$(UnoEffectiveTargetFrameworks)</TargetFrameworks>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
