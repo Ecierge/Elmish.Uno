@@ -12,6 +12,13 @@
   },
   "sourceName": "SolutionTemplate",
   "preferNameDirectory": true,
+  "sources": [
+    {
+      "rename": {
+        "SolutionTemplate-VSMac.slnf.template": "SolutionTemplate-VSMac.slnf"
+      }
+    }
+  ],
   "guids": [
     "7727D8AD-8883-427D-A77A-7C8639ACE4AF",
     "438B0CF0-79E5-47B9-A367-9A295E3C3F48",
