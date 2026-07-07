@@ -28,9 +28,18 @@
   -->
   <PropertyGroup Condition="'$(MSBuildProjectExtension)'=='.fsproj' AND '$(OutputType)' == 'Library'">
     <GenerateDependencyFile>false</GenerateDependencyFile>
+    <!-- F# library projects declare no CopyToOutputDirectory content; skip transitive copy traversal -->
+    <_GetChildProjectCopyToOutputDirectoryItems>false</_GetChildProjectCopyToOutputDirectoryItems>
   </PropertyGroup>
 
   <Target Name="_UnoEmbeddedResourcesInjection"
           Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+
+  <Target Name="_UnoValidateReferencesUnoRuntimeIdentifier"
+          Condition="'$(MSBuildProjectExtension)'=='.fsproj'" />
+
+  <!-- See root Directory.Build.targets: UnoImage.inputs never created for non-app-head projects -->
+  <Target Name="UnoResizetizeImages"
+          Condition="'$(OutputType)' == 'Library' OR ('$(UnoSingleProject)' != 'true' AND '$(SingleProject)' != 'true')" />
 
 </Project>
