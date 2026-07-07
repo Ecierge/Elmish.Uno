@@ -1,7 +1,7 @@
 ﻿<Project ToolsVersion="15.0">
   <PropertyGroup>
     <SystemVersion>10.0.0</SystemVersion>
-    <MicrosoftExtensionsVersion>10.0.0</MicrosoftExtensionsVersion>
+    <MicrosoftExtensionsVersion>10.0.9</MicrosoftExtensionsVersion>
     <CommunityToolkitVersion>8.2.251219</CommunityToolkitVersion>
   </PropertyGroup>
   <ItemGroup Label="Microsoft">
@@ -35,7 +35,7 @@
     <PackageVersion Include="FSharp.Control.Reactive" Version="5.0.2" />
     <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.1.0" />
     <PackageVersion Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
-    <PackageVersion Include="FSharp.Core" Version="10.0.100" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.301" />
     <PackageVersion Include="Hedgehog" Version="0.13.0" />
     <PackageVersion Include="Hedgehog.Experimental" Version="0.10.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsVersion)" />
