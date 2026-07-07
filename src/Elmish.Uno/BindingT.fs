@@ -417,9 +417,8 @@ type BindingT private () =
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'a>> =
-    Binding.OneWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore
+    Binding.OneWaySeqT.createIncrementalLoading get itemEquals getId hasMore loadMore
     >> Binding.addLazy refEq
-    >> Binding.mapModel get
 
   /// <summary>
   ///   Creates a one-way binding to a sequence of items, each uniquely
@@ -1030,10 +1029,9 @@ type BindingT private () =
        hasMore: 'model -> bool,
        loadMore: uint * (uint -> unit) -> 'msg,
        update: NotifyCollectionChangedEventArgs -> 'model -> 'msg)
-      : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
-    Binding.TwoWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore update
+             : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
+    Binding.TwoWaySeqT.createIncrementalLoading get itemEquals getId hasMore loadMore update
     >> Binding.addLazy refEq
-    >> Binding.mapModel get
 
 
   /// <summary>
@@ -1061,9 +1059,8 @@ type BindingT private () =
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
     let update args _ = update args
-    Binding.TwoWaySeqT.create id itemEquals getId update
+    Binding.TwoWaySeqT.create get itemEquals getId update
     >> Binding.addLazy refEq
-    >> Binding.mapModel get
 
   /// <summary>
   ///   Creates a two-way binding to a sequence of items, each uniquely
@@ -1095,9 +1092,8 @@ type BindingT private () =
        update: NotifyCollectionChangedEventArgs -> 'msg)
       : string -> Binding<'model, 'msg, ObservableCollection<'T>> =
     let update args _ = update args
-    Binding.TwoWaySeqT.createIncrementalLoading id itemEquals getId hasMore loadMore update
+    Binding.TwoWaySeqT.createIncrementalLoading get itemEquals getId hasMore loadMore update
     >> Binding.addLazy refEq
-    >> Binding.mapModel get
 
 
   /// <summary>
