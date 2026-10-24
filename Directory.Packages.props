@@ -47,7 +47,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="Microsoft.Windows.Compatibility" Version="10.0.13" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="8.0.0" />
-    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Uno.Extensions.Logging.WebAssembly.Console" Version="1.7.0" />
     <PackageVersion Include="Uno.Resizetizer" Version="$(UnoResizetizerVersion)" />
     <PackageVersion Include="Uno.Toolkit.WinUI" Version="$(UnoToolkitVersion)" />
