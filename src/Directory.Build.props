@@ -17,6 +17,6 @@
   <PropertyGroup>
     <WinAppSdkVersion>2.5.1</WinAppSdkVersion> <!-- https://www.nuget.org/packages/Microsoft.WindowsAppSDK -->
     <WinAppSdkBuildToolsVersion>10.0.28000.2705</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->
-    <WindowsSdkPackageVersion>10.0.26100.87</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
+    <WindowsSdkPackageVersion>10.0.28000.87</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
   </PropertyGroup>
 </Project>
