@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>
       $(DotNetVersion);
-      $(DotNetVersion)-windows10.0.26100
+      $(DotNetVersion)-windows10.0.28000
     </TargetFrameworks>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>

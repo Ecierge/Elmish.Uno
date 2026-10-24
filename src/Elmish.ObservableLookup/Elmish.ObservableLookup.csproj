@@ -3,7 +3,7 @@
   <Choose>
     <When Condition=" '$(OS)' == 'Windows_NT' ">
       <PropertyGroup>
-        <TargetFrameworks>$(DotNetVersion);$(DotNetVersion)-windows10.0.26100</TargetFrameworks>
+        <TargetFrameworks>$(DotNetVersion);$(DotNetVersion)-windows10.0.28000</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>
