@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [Ecierge]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    # FSharp.Collections.Immutable comes from the public GitHub Packages feed of fsprojects (see NuGet.Config).
+    # GitHub Packages wants a token even for public packages, the token of the workflow is enough.
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}
+      simple-version: ${{ steps.nbgv.outputs.SimpleVersion }}
+      public-release: ${{ steps.nbgv.outputs.PublicRelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Nerdbank.GitVersioning counts the commits
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compute the version
+        id: nbgv
+        uses: dotnet/nbgv@v0.5.2
+        with:
+          setAllVars: true
+
+      - name: Restore
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # NuGet.Config expands %GITHUB_TOKEN% for the fsprojects feed
+        run: dotnet restore Elmish.Uno.sln -p:Configuration=Release
+
+      - name: Build
+        run: |
+          New-Item -ItemType Directory -Force artifacts/logs | Out-Null
+          dotnet build Elmish.Uno.sln -c Release --no-restore "-p:Version=$env:NBGV_NuGetPackageVersion" -bl:artifacts/logs/build.binlog
+
+      - name: Test
+        run: dotnet test src/Elmish.Uno.Tests/Elmish.Uno.Tests.fsproj -c Release --no-build --logger "trx;LogFileName=Elmish.Uno.Tests.trx" --results-directory artifacts/test-results
+
+      # Elmish.Uno depends on Elmish.ObservableLookup, so both packages carry the same version. Pack builds again (up to date), because packing Elmish.Uno with --no-build
+      # fails with NETSDK1085: the reference to Elmish.ObservableLookup invokes its Build target.
+      - name: Pack
+        run: |
+          dotnet pack src/Elmish.ObservableLookup/Elmish.ObservableLookup.csproj -c Release --no-restore "-p:Version=$env:NBGV_NuGetPackageVersion" -o artifacts/packages
+          dotnet pack src/Elmish.Uno/Elmish.Uno.fsproj -c Release --no-restore "-p:Version=$env:NBGV_NuGetPackageVersion" -o artifacts/packages
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: artifacts/packages/*.nupkg
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: logs
+          path: |
+            artifacts/logs
+            artifacts/test-results
+          if-no-files-found: ignore
+
+  # Development versions (1.0.N-g<hash>) of every commit of main go to the GitHub Packages feed of the organization.
+  publish-dev:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/Ecierge'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Push to GitHub Packages
+        env:
+          NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet nuget push "packages/*.nupkg" --source https://nuget.pkg.github.com/Ecierge/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
+
+  # A release is a tag made by `nbgv tag` (see README.md). Its stable packages go to the GitHub Packages feed and a GitHub Release is created.
+  publish-release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check that the tag is the version of its commit
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+          SIMPLE_VERSION: ${{ needs.build.outputs.simple-version }}
+          PUBLIC_RELEASE: ${{ needs.build.outputs.public-release }}
+        run: |
+          if ($env:PUBLIC_RELEASE -ne 'True') { throw "The build of '$env:TAG' is not a public release." }
+          if ($env:TAG -cne "v$env:SIMPLE_VERSION") { throw "The tag '$env:TAG' is not the version of its commit (v$env:SIMPLE_VERSION)." }
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Push to GitHub Packages
+        env:
+          NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet nuget push "packages/*.nupkg" --source https://nuget.pkg.github.com/Ecierge/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" packages/*.nupkg --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes --verify-tag
+
+  # The push to nuget.org is gated by the `nuget.org` environment (required reviewer, secret NUGET_API_KEY)
+  # and switched on by the repository variable PUBLISH_TO_NUGET_ORG.
+  publish-nuget-org:
+    needs: publish-release
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PUBLISH_TO_NUGET_ORG == 'true'
+    runs-on: ubuntu-latest
+    environment: nuget.org
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Push to nuget.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "packages/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate

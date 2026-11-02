@@ -3,9 +3,34 @@ WinUI/Uno Platfrom done the Elmish Way
 
 <img src="https://raw.githubusercontent.com/xperiandri/Elmish.Uno/master/logo/elmish-uno-logo-ghreadme.png" width="300" align="right" />
 
-[![NuGet version](https://img.shields.io/nuget/v/Elmish.Uno.svg)](https://www.nuget.org/packages/Elmish.Uno) [![NuGet downloads](https://img.shields.io/nuget/dt/Elmish.Uno.svg)](https://www.nuget.org/packages/Elmish.Uno) [![Build status](https://github.com/xperiandri/Elmish.Uno/actions/workflows/continuous_integration.yml/badge.svg)](https://github.com/xperiandri/Elmish.Uno/actions/workflows/continuous_integration.yml)
+[![CI](https://github.com/Ecierge/Elmish.Uno/actions/workflows/ci.yml/badge.svg)](https://github.com/Ecierge/Elmish.Uno/actions/workflows/ci.yml)
 
 **The good parts of MVVM (the data bindings) with the simplicity and robustness of an MVU architecture for the rest of your app. Never write an overly-complex ViewModel class again!**
+
+### Packages
+
+`Elmish.Uno` and its dependency `Elmish.ObservableLookup` are published to the GitHub Packages feed of the Ecierge organization, `https://nuget.pkg.github.com/Ecierge/index.json`: release versions (`1.0.N`) for every tag and development versions (`1.0.N-g<commit hash>`) for every commit of the `Ecierge` branch. GitHub Packages asks for a token with the `read:packages` scope even for public packages.
+
+`Elmish.Uno` depends on `FSharp.Collections.Immutable`, a prerelease build of which is published to the public GitHub Packages feed of fsprojects, so a `nuget.config` needs both feeds:
+
+```xml
+<packageSources>
+  <add key="Ecierge" value="https://nuget.pkg.github.com/Ecierge/index.json" protocolVersion="3" />
+  <add key="FSProjects" value="https://nuget.pkg.github.com/fsprojects/index.json" protocolVersion="3" />
+</packageSources>
+<packageSourceMapping>
+  <packageSource key="Ecierge">
+    <package pattern="Elmish.Uno" />
+    <package pattern="Elmish.ObservableLookup" />
+  </packageSource>
+  <packageSource key="FSProjects">
+    <package pattern="FSharp.Collections.Immutable" />
+  </packageSource>
+  <packageSource key="nuget.org">
+    <package pattern="*" />
+  </packageSource>
+</packageSourceMapping>
+```
 
 ### Elevator pitch
 
