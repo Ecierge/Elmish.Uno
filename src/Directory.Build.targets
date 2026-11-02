@@ -9,6 +9,18 @@
   </PropertyGroup>
 
   <!--
+    Workaround for dotnet/fsharp#20812: with the parallel compilation of the F# compiler in .NET SDK 10.0.402 a build fails now and then
+    with "FS0073: internal error: Undefined or unsolved type variable". ParallelCompilation=false switches it off. The compiler marks that
+    switch as meant for tests only (warning FS0075), so the warning is silenced.
+    The Directory.Build.targets of the host repository (PropertyManagement) has the same group, and this file shadows it when Elmish.Uno
+    is built as a submodule. Remove the group once the SDK ships the fix.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)'=='.fsproj'">
+    <ParallelCompilation>false</ParallelCompilation>
+    <NoWarn>$(NoWarn);FS0075</NoWarn>
+  </PropertyGroup>
+
+  <!--
     F# library projects contain no XAML or MRT resources.
     GetMrtPackagingOutputs is called transitively by the WinUI head on every ProjectReference.
     Overriding it here makes it a no-op, skipping MRT/PRI packaging overhead on all F# libraries.
