@@ -50,12 +50,13 @@ Also consider cleaning your commit history by squashing commits in an interactiv
 
 More on rebasing and squashing can be found in [this guide](https://robots.thoughtbot.com/git-interactive-rebase-squash-amend-rewriting-history).
 
-## Deployment checklist
+## Releasing
 
-For maintainers.
+For maintainers. The version comes from [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning): `version.json` holds the major and minor number, the patch number is the number of commits since that value was set.
 
-* Make necessary changes to the code
-* Update `RELEASE_NOTES.md`
-* Update the version in the `fsproj` file
-* Commit
-* Push to `master` (or complete a PR targeting `master`). If the build is successful (and the version has changed), then the package is published to NuGet and a tag is added to that commit.
+* Merge the changes into `Ecierge`. Every push to `Ecierge` publishes a development version (`1.0.N-g<commit hash>`) of `Elmish.Uno` and `Elmish.ObservableLookup` to the GitHub Packages feed `https://nuget.pkg.github.com/Ecierge/index.json`.
+* Make sure that the last commit of `Ecierge` has a green build.
+* Run `nbgv tag` on `Ecierge`, it creates the tag `v<version>` for the current commit, and push it with `git push origin v<version>`.
+* The workflow pushes the release packages to the same GitHub Packages feed and creates a GitHub Release with generated notes. `RELEASE_NOTES.md` stops at `4.0.0-beta-56`.
+* The push to nuget.org is switched off until the repository variable `PUBLISH_TO_NUGET_ORG` is `true`. `Elmish.Uno` depends on a prerelease build of `FSharp.Collections.Immutable` from the public GitHub Packages feed of fsprojects, and nuget.org consumers cannot restore it from nuget.org, so switch the push on when that package is available there. The push also waits for the approval of the `nuget.org` environment.
+* To start the next minor version change `version` in `version.json`, for example to `1.1`.
