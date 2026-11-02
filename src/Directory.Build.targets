@@ -63,4 +63,10 @@
     <SdkSupportedTargetPlatformVersion Include="10.0.28000.0" />
   </ItemGroup>
 
+  <!-- The packages carry the README and the logo of the repository. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(RepoRoot)README.md" Link="README.md" Visible="false" Pack="true" PackagePath="\" />
+    <None Include="$(RepoRoot)logo/elmish-uno-logo-128x128.png" Link="elmish-uno-logo-128x128.png" Visible="false" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
 </Project>

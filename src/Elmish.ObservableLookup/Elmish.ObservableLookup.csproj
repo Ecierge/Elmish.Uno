@@ -15,6 +15,9 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Observable lookup (grouping) collections for Elmish.Uno and WinUI data binding.</Description>
+    <PackageTags>Elmish Uno WinUI ObservableCollection Lookup</PackageTags>
   </PropertyGroup>
 
   <Target Name="UnoDumpTargetFrameworks" />

@@ -19,4 +19,34 @@
     <WinAppSdkBuildToolsVersion>10.0.28000.2705</WinAppSdkBuildToolsVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.BuildTools -->
     <WindowsSdkPackageVersion>10.0.28000.87</WindowsSdkPackageVersion> <!-- https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref -->
   </PropertyGroup>
+
+  <!--
+    Package metadata. Only the projects that set IsPackable (Elmish.Uno and Elmish.ObservableLookup) are packed.
+    The version is a placeholder: CI passes -p:Version with the number that Nerdbank.GitVersioning computes (see version.json).
+  -->
+  <PropertyGroup>
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..'))</RepoRoot>
+    <IsPackable>false</IsPackable>
+    <Version>0.0.0-local</Version>
+    <PackageProjectUrl>https://github.com/Ecierge/Elmish.Uno</PackageProjectUrl>
+    <PackageReleaseNotes>https://github.com/Ecierge/Elmish.Uno/releases</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>elmish-uno-logo-128x128.png</PackageIcon>
+    <RepositoryUrl>https://github.com/Ecierge/Elmish.Uno</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <!-- Release builds embed the symbols in the assemblies: GitHub Packages does not take .snupkg files, and one package then serves every feed. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <!-- Deterministic paths in the assemblies that GitHub Actions builds. -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 </Project>

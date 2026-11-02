@@ -6,6 +6,7 @@
     </TargetFrameworks>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
@@ -22,35 +23,16 @@
     -->
 
     <Description>Elmish implementation for WInUI and Uno Platform</Description>
-
-    <RepoRoot>$([System.IO.Path]::GetDirectoryName($([MSBuild]::GetPathOfFileAbove('.gitignore', '$(MSBuildThisFileDirectory)'))))</RepoRoot>
-    <RepositoryUrl>https://github.com/fsprojects/FSharp.Data.GraphQL</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <Version>1.0.0</Version>
     <PackageTags>FSharp Elmish Uno WinUI</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>https://github.com/elmish/Elmish.Uno/blob/master/RELEASE_NOTES.md</PackageReleaseNotes>
-    <PackageIcon>elmish-uno-logo-128x128.png</PackageIcon>
-    <PackageProjectUrl>https://github.com/xperiandri/Elmish.Uno/</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
     <!--Turn on warnings for unused values (arguments and let bindings) -->
     <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
 
   <PropertyGroup>
-    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+    <!-- NU5104: a stable Elmish.Uno depends on the prerelease CI build of FSharp.Collections.Immutable from the public GitHub Packages feed of fsprojects. -->
+    <NoWarn>$(NoWarn);NETSDK1206;NU5104</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="$(RepoRoot)\logo\elmish-uno-logo-128x128.png" Pack="true" PackagePath="\" />
-    <None Include="$(RepoRoot)\README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
